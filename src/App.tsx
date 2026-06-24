@@ -132,6 +132,7 @@ export default function App() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const timeRef = useRef(0);
+  const previousInputsRef = useRef(inputs);
   const topEntity = useMemo(() => parseEntityName(source), [source]);
   const selectedBoard = useMemo(() => boards.find((board) => board.id === selectedBoardId) ?? cycloneII, [selectedBoardId]);
   const ports = useMemo(() => parseEntityPorts(source), [source]);
@@ -309,6 +310,33 @@ export default function App() {
     } finally { setIsSimulating(false); }
   }, [appendWaveSample, compileProject, inputPortValues, ports, source, topEntity]);
 
+  const updateRunningSimulation = useCallback(async () => {
+    try {
+      if (!isTauriApp()) {
+        const previewValues = previewOutputs(source, inputPortValues, ports);
+        setSimulatedOutputs(previewValues);
+        setProblems([]);
+        appendWaveSample(previewValues);
+        return;
+      }
+      const { invoke } = await import("@tauri-apps/api/core");
+      const result = await invoke<SimulationResult>("simulate_project", {
+        sources: [{ name: "board_demo.vhd", content: source }],
+        topEntity,
+        ports,
+        inputs: inputPortValues
+      });
+      setSimulatedOutputs(result.outputs);
+      setProblems([]);
+      setCompilationLog((old) => result.diagnostics.length ? [...old, "", ...result.diagnostics] : old);
+      appendWaveSample(result.outputs);
+    } catch (error) {
+      setProblems([String(error)]);
+      setBottomTab("problems");
+      setSimState("stopped");
+    }
+  }, [appendWaveSample, inputPortValues, ports, source, topEntity]);
+
   const handleBoardContext = useCallback((endpoint: BoardEndpoint, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -317,7 +345,7 @@ export default function App() {
   }, []);
 
   const handleBoardInput = useCallback((endpoint: BoardEndpoint, next: boolean) => {
-    setInputs((old) => ({ ...old, [endpoint.id]: next }));
+    setInputs((old) => old[endpoint.id] === next ? old : { ...old, [endpoint.id]: next });
   }, []);
 
   useEffect(() => {
@@ -325,8 +353,10 @@ export default function App() {
     setSimState("stopped");
   }, [source, assignments]);
   useEffect(() => {
-    if (simState === "running" && isTauriApp()) void runSimulation();
-  }, [inputs]);
+    if (previousInputsRef.current === inputs) return;
+    previousInputsRef.current = inputs;
+    if (simState === "running") void updateRunningSimulation();
+  }, [inputs, simState, updateRunningSimulation]);
 
   const compatiblePorts = context ? ports.filter((port) => port.direction === context.endpoint.direction && port.id.toLowerCase().includes(signalSearch.toLowerCase())) : [];
   const assignedEndpointIds = new Set(assignments.map((assignment) => assignment.endpointId));
@@ -527,7 +557,17 @@ function BoardDevice({ endpoint, mapped, on, onContext, onInput }: {
   }
 
   if (endpoint.kind === "button") {
-    return <button {...common} className={`push ${mapped ? "mapped" : ""}`} onPointerDown={() => onInput(endpoint, false)} onPointerUp={() => onInput(endpoint, true)} onPointerLeave={() => onInput(endpoint, true)}><i /><span>{label}</span></button>;
+    const press = (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      onInput(endpoint, false);
+    };
+    const release = (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      onInput(endpoint, true);
+    };
+    return <button {...common} className={`push ${mapped ? "mapped" : ""}`} onPointerDown={press} onPointerUp={release} onPointerCancel={release}><i /><span>{label}</span></button>;
   }
 
   return <button {...common} className={`led-unit ${on ? "on" : ""} ${endpoint.kind.includes("green") ? "green" : "red"} ${mapped ? "mapped" : ""}`}><i /><span>{label}</span></button>;
