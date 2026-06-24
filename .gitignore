@@ -1,0 +1,21 @@
+node_modules/
+dist/
+src-tauri/target/
+.idea/
+.vscode/
+*.log
+
+# Local reference material
+refs/
+
+# GHDL compilation and simulation artifacts
+*.cf
+*.o
+*.vcd
+*.ghw
+*.fst
+logicboard_tb.vhd
+logicboard_tb
+logicboard_tb.exe
+*.gcda
+*.gcno
