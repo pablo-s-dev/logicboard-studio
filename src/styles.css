@@ -366,6 +366,8 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .project-field { display: grid; gap: 6px; margin-bottom: 13px; color: #7e8d95; font-size: 8px; letter-spacing: .5px; text-transform: uppercase; }
 .project-field input, .project-field select { width: 100%; height: 36px; border: 1px solid #2b3940; border-radius: 5px; outline: 0; background: #0b1114; color: #cad6da; padding: 0 10px; font: 10px "IBM Plex Mono", monospace; text-transform: none; }
 .project-field input:focus, .project-field select:focus { border-color: #46cbd2; box-shadow: 0 0 0 2px #39d0d81f; }
+.settings-modal { width: min(460px, calc(100vw - 32px)); }
+.field-help { color: #62727a; font-size: 8px; letter-spacing: 0; line-height: 13px; text-transform: none; }
 .template-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 17px 0; }
 .template-grid button { min-height: 76px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 11px; border: 1px solid #29353c; border-radius: 6px; background: #0e1518; color: #aebbc0; text-align: left; }
 .template-grid button:hover { border-color: #477078; background: #142025; }
