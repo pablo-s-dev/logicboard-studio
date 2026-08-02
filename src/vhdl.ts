@@ -1,7 +1,11 @@
 import type { EntityPort } from "./types";
 
 export function parseEntityName(source: string): string | null {
-  return source.replace(/--.*$/gm, " ").match(/entity\s+(\w+)\s+is/i)?.[1] ?? null;
+  return parseEntityNames(source)[0] ?? null;
+}
+
+export function parseEntityNames(source: string): string[] {
+  return Array.from(source.replace(/--.*$/gm, " ").matchAll(/entity\s+(\w+)\s+is/gi), (match) => match[1]);
 }
 
 export function parseEntityPorts(source: string): EntityPort[] {
