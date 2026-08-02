@@ -14,9 +14,9 @@ export async function chooseProjectFolder() {
   return typeof selected === "string" ? selected : null;
 }
 
-export async function showProjectError(error: unknown) {
+export async function showProjectError(error: unknown, title = "LogicBoard project error") {
   if (!isDesktopApp()) return;
-  await message(String(error), { title: "LogicBoard project error", kind: "error" });
+  await message(String(error), { title, kind: "error" });
 }
 
 export async function listTemplates() {

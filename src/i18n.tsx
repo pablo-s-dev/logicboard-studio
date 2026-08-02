@@ -1,0 +1,198 @@
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+
+export type Language = "pt-BR" | "en-US";
+type Variables = Record<string, string | number>;
+
+const ptBR: Record<string, string> = {
+  "language.name": "Português (Brasil)",
+  "settings.title": "Configurações",
+  "settings.language": "Idioma da interface",
+  "settings.language.help": "A preferência é salva neste computador.",
+  "settings.apply": "Aplicar",
+  "common.cancel": "Cancelar",
+  "common.save": "Salvar",
+  "common.close": "Fechar diálogo",
+  "common.generated": "gerado",
+  "common.readOnly": "somente leitura",
+  "common.modified": "modificado",
+  "common.current": "atual",
+  "project.label": "PROJETO",
+  "project.new": "Novo projeto",
+  "project.new.help": "Em branco ou a partir de um modelo",
+  "project.open": "Abrir projeto",
+  "project.open.help": "Selecione uma pasta de projeto",
+  "project.saveAs": "Salvar como",
+  "project.saveAs.help": "Crie uma pasta de projeto independente",
+  "project.settings": "Configurações do projeto",
+  "project.settings.help": "Nome, placa e entidade principal",
+  "project.new.title": "Novo projeto LogicBoard",
+  "project.name": "Nome do projeto",
+  "project.folderName": "Nome da pasta",
+  "project.openExisting": "Abrir existente",
+  "project.chooseLocation": "Escolher local…",
+  "project.targetBoard": "Placa de destino",
+  "project.topEntity": "Entidade principal",
+  "project.unsaved.title": "Alterações não salvas",
+  "project.unsaved.question": "Salvar as alterações de {{name}} antes de continuar?",
+  "project.discard": "Descartar",
+  "project.save.title": "Salvar projeto (Ctrl+S)",
+  "project.desktopOnly": "As pastas de projeto estão disponíveis apenas no aplicativo desktop Tauri.",
+  "project.error.title": "Erro no projeto LogicBoard",
+  "template.blank.name": "Projeto em branco",
+  "template.blank.description": "Uma entidade VHDL mínima pronta para edição.",
+  "template.led-switch-mirror.name": "Espelho de chaves e LEDs",
+  "template.led-switch-mirror.description": "Lógica combinacional introdutória ligando chaves aos LEDs vermelhos.",
+  "template.button-seven-segment.name": "Botões e display de sete segmentos",
+  "template.button-seven-segment.description": "Botões ativos em nível baixo controlando dígitos e LEDs de estado.",
+  "template.four-digit-timer.name": "Temporizador de quatro dígitos",
+  "template.four-digit-timer.description": "Temporizador sequencial com botões, LEDs e quatro displays.",
+  "status.compiling": "Compilando",
+  "status.starting": "Iniciando",
+  "status.ready": "Pronto",
+  "status.running": "Executando",
+  "toolbar.targetBoard": "PLACA DE DESTINO",
+  "toolbar.onlyBoard": "Somente a EP2C20F484C7 está disponível no momento",
+  "toolbar.changeBoard": "Alterar a placa reinicia a simulação",
+  "toolbar.clockNotice": "A simulação interativa usa clocks de {{frequency}}.",
+  "toolbar.stop": "Parar",
+  "toolbar.run": "Executar",
+  "toolbar.compiling": "Compilando...",
+  "toolbar.starting": "Iniciando...",
+  "toolbar.reset": "Reiniciar simulação",
+  "explorer.title": "EXPLORADOR",
+  "explorer.expand": "Expandir explorador",
+  "explorer.collapse": "Recolher explorador",
+  "explorer.topEntity": "ENTIDADE PRINCIPAL",
+  "board.title": "PLACA INTERATIVA",
+  "board.instructions": "Clique com o botão direito em um bloco para mapear um vetor, ou em um pino/segmento para mapeamento granular",
+  "board.assignedPins": "{{count}} pinos físicos atribuídos",
+  "board.constraintsUpdate": "as restrições do Quartus são atualizadas automaticamente.",
+  "board.schematic": "Esquema funcional da placa",
+  "board.name.ep2c20f484c7": "Placa de desenvolvimento Cyclone II",
+  "board.group.SW": "Chaves",
+  "board.group.KEY": "Botões",
+  "board.group.LEDR": "LEDs vermelhos",
+  "board.group.LEDG": "LEDs verdes",
+  "board.group.CLOCKS": "Clocks",
+  "board.group.HEX0": "HEX0",
+  "board.group.HEX1": "HEX1",
+  "board.group.HEX2": "HEX2",
+  "board.group.HEX3": "HEX3",
+  "board.mapVector": "Clique com o botão direito para mapear o vetor inteiro",
+  "board.mapPin": "Clique com o botão direito para definir a porta deste pino",
+  "board.interact": "Clique com o botão esquerdo para interagir com este controle.",
+  "board.pinUnknown": "pino físico ainda não cadastrado",
+  "board.unmapped": "{{label}} ainda sem porta mapeada ({{pin}}). {{instruction}}.",
+  "board.mapped": "{{label}} → {{port}} ({{pin}}). {{instruction}}.",
+  "editor.generatedView": "Visualização das restrições geradas",
+  "editor.source": "Editor de código-fonte VHDL",
+  "inspector.title": "Inspetor",
+  "inspector.expand": "Expandir inspetor",
+  "inspector.collapse": "Recolher inspetor",
+  "inspector.assignments": "Atribuições",
+  "inspector.ports": "Portas",
+  "inspector.mapper": "Mapeador",
+  "inspector.filter.mapper": "Filtrar terminais ou portas",
+  "inspector.filter.assignments": "Filtrar atribuições",
+  "inspector.filter.ports": "Filtrar portas da entidade",
+  "inspector.summary.mapper": "MAPEADOR DA PLACA",
+  "inspector.summary.assignments": "PINOS ATRIBUÍDOS",
+  "inspector.summary.ports": "PORTAS DA ENTIDADE",
+  "inspector.none.assignments": "Nenhuma atribuição encontrada.",
+  "inspector.none.ports": "Nenhuma porta encontrada.",
+  "inspector.none.endpoints": "Nenhum terminal da placa encontrado.",
+  "inspector.pinUnknown": "pino desconhecido",
+  "inspector.notMapped": "não mapeado",
+  "inspector.remove": "Remover {{port}}",
+  "inspector.vector": "Vetor",
+  "inspector.chooseVector": "Escolha um vetor compatível",
+  "inspector.choosePort": "Escolha uma porta",
+  "inspector.clearVector": "Limpar atribuição do vetor",
+  "inspector.clearPin": "Limpar atribuição do pino",
+  "mapping.choosePort": "ESCOLHA UMA PORTA DA ENTIDADE",
+  "mapping.search": "Pesquisar portas da entidade",
+  "mapping.noTarget": "Nenhum destino compatível",
+  "mapping.noVectors": "Nenhum vetor {{direction}} compatível",
+  "mapping.noPorts": "Nenhuma porta {{direction}} compatível",
+  "mapping.clear": "Limpar atribuição",
+  "mapping.pins": "{{count}} pinos",
+  "mapping.status.mapped": "mapeado",
+  "mapping.status.unmapped": "não mapeado",
+  "mapping.status.partial": "parcial",
+  "bottom.expand": "Expandir painel inferior",
+  "bottom.collapse": "Recolher painel inferior",
+  "bottom.sample": "Amostra",
+  "bottom.compilation": "Compilação",
+  "bottom.problems": "Problemas",
+  "bottom.noCapture": "Sem captura",
+  "bottom.noCompilation": "Nenhuma compilação ainda. Pressione Executar para analisar e iniciar a simulação.",
+  "bottom.noProblems": "Nenhum problema relatado.",
+  "wave.ready": "A captura de amostras está pronta",
+  "wave.ready.help": "Execute a simulação para capturar os valores atuais dos sinais mapeados.",
+  "wave.current": "Amostra atual",
+  "wave.low": "0 baixo",
+  "wave.high": "1 alto",
+  "wave.showAll": "Mostrar todos",
+  "wave.hide": "Ocultar {{port}}",
+  "wave.allHidden": "Todos os sinais mapeados estão ocultos.",
+  "compile.start": "Iniciando análise...",
+  "compile.blocked": "Análise bloqueada. Consulte Problemas para obter detalhes.",
+  "compile.preview": "A análise do preview passou. A análise GHDL é executada no aplicativo desktop Tauri.",
+  "compile.mappingWarning": "Aviso de mapeamento: {{message}}",
+  "compile.success": "Análise GHDL concluída com sucesso.",
+  "compile.failed": "A análise GHDL falhou. Consulte Problemas para obter detalhes.",
+  "simulation.success": "Simulação GHDL concluída com sucesso até {{time}}.",
+  "simulation.notRunning": "A sessão de simulação não está em execução.",
+  "simulation.stopped": "Sessão de simulação encerrada: {{message}}",
+  "pace.behind": "Atrasada: {{pace}}x",
+  "pace.effective": "Ritmo efetivo: ~{{pace}}x",
+  "pace.adjust": "Ajuste as constantes de clock antes de executar.",
+  "clock.tooltip": "A simulação interativa usa clocks de {{simulation}}.\nSe o VHDL usa constantes de hardware como 50_000_000, ajuste-as para simulação, por exemplo, 1_000.\n{{physical}} · Clock simulado: {{simulation}} · {{pace}}",
+  "clock.hardware": "hardware",
+  "resize.explorer": "Arraste para redimensionar o explorador. Clique duas vezes para restaurar.",
+  "resize.editor": "Arraste para redimensionar o editor. Clique duas vezes para restaurar.",
+  "resize.inspector": "Arraste para redimensionar o inspetor. Clique duas vezes para restaurar.",
+  "resize.bottom": "Arraste para redimensionar o painel inferior. Clique duas vezes para restaurar."
+};
+
+const enUS: Record<string, string> = {
+  "language.name": "English (United States)",
+  "settings.title": "Settings", "settings.language": "Interface language", "settings.language.help": "This preference is saved on this computer.", "settings.apply": "Apply",
+  "common.cancel": "Cancel", "common.save": "Save", "common.close": "Close dialog", "common.generated": "generated", "common.readOnly": "read-only", "common.modified": "modified", "common.current": "current",
+  "project.label": "PROJECT", "project.new": "New Project", "project.new.help": "Blank or from a template", "project.open": "Open Project", "project.open.help": "Select a project folder", "project.saveAs": "Save As", "project.saveAs.help": "Create an independent project folder", "project.settings": "Project Settings", "project.settings.help": "Name, board, and top entity", "project.new.title": "New LogicBoard Project", "project.name": "Project name", "project.folderName": "Folder name", "project.openExisting": "Open existing", "project.chooseLocation": "Choose location…", "project.targetBoard": "Target board", "project.topEntity": "Top entity", "project.unsaved.title": "Unsaved changes", "project.unsaved.question": "Save changes to {{name}} before continuing?", "project.discard": "Discard", "project.save.title": "Save project (Ctrl+S)", "project.desktopOnly": "Project folders are available only in the Tauri desktop application.", "project.error.title": "LogicBoard project error",
+  "template.blank.name": "Blank project", "template.blank.description": "A minimal top-level VHDL entity ready for editing.", "template.led-switch-mirror.name": "LED and switch mirror", "template.led-switch-mirror.description": "Introductory combinational logic mapping switches to red LEDs.", "template.button-seven-segment.name": "Buttons and seven-segment", "template.button-seven-segment.description": "Active-low buttons select digits and status LEDs.", "template.four-digit-timer.name": "Four-digit timer", "template.four-digit-timer.description": "Clocked timer with buttons, LEDs, and four seven-segment displays.",
+  "status.compiling": "Compiling", "status.starting": "Starting", "status.ready": "Ready", "status.running": "Running", "toolbar.targetBoard": "TARGET BOARD", "toolbar.onlyBoard": "Only EP2C20F484C7 is available right now", "toolbar.changeBoard": "Changing boards resets the simulation", "toolbar.clockNotice": "Interactive simulation uses {{frequency}} board clocks.", "toolbar.stop": "Stop", "toolbar.run": "Run", "toolbar.compiling": "Compiling...", "toolbar.starting": "Starting...", "toolbar.reset": "Reset simulation",
+  "explorer.title": "EXPLORER", "explorer.expand": "Expand explorer", "explorer.collapse": "Collapse explorer", "explorer.topEntity": "TOP ENTITY", "board.title": "INTERACTIVE BOARD", "board.instructions": "Right-click a block for vector mapping, or a pin/segment for granular mapping", "board.assignedPins": "{{count}} physical pins assigned", "board.constraintsUpdate": "generated Quartus constraints update automatically.", "board.schematic": "Functional board schematic", "board.name.ep2c20f484c7": "Cyclone II Starter Board", "board.group.SW": "Toggle switches", "board.group.KEY": "Pushbuttons", "board.group.LEDR": "Red LEDs", "board.group.LEDG": "Green LEDs", "board.group.CLOCKS": "Clocks", "board.group.HEX0": "HEX0", "board.group.HEX1": "HEX1", "board.group.HEX2": "HEX2", "board.group.HEX3": "HEX3", "board.mapVector": "Right-click to map the whole vector", "board.mapPin": "Right-click to set this pin's port", "board.interact": "Left-click to interact with this control.", "board.pinUnknown": "physical pin not registered", "board.unmapped": "{{label}} has no mapped port yet ({{pin}}). {{instruction}}.", "board.mapped": "{{label}} → {{port}} ({{pin}}). {{instruction}}.",
+  "editor.generatedView": "Generated constraints view", "editor.source": "VHDL source editor", "inspector.title": "Inspector", "inspector.expand": "Expand inspector", "inspector.collapse": "Collapse inspector", "inspector.assignments": "Assignments", "inspector.ports": "Ports", "inspector.mapper": "Mapper", "inspector.filter.mapper": "Filter endpoints or ports", "inspector.filter.assignments": "Filter assignments", "inspector.filter.ports": "Filter entity ports", "inspector.summary.mapper": "BOARD MAPPER", "inspector.summary.assignments": "ASSIGNED PINS", "inspector.summary.ports": "ENTITY PORTS", "inspector.none.assignments": "No assignments found.", "inspector.none.ports": "No ports found.", "inspector.none.endpoints": "No board endpoints found.", "inspector.pinUnknown": "pin unknown", "inspector.notMapped": "not mapped", "inspector.remove": "Remove {{port}}", "inspector.vector": "Vector", "inspector.chooseVector": "Choose compatible vector", "inspector.choosePort": "Choose port", "inspector.clearVector": "Clear vector assignment", "inspector.clearPin": "Clear pin assignment",
+  "mapping.choosePort": "CHOOSE ENTITY PORT", "mapping.search": "Search entity ports", "mapping.noTarget": "No compatible target", "mapping.noVectors": "No compatible {{direction}} vectors", "mapping.noPorts": "No compatible {{direction}} ports", "mapping.clear": "Clear assignment", "mapping.pins": "{{count}} pins", "mapping.status.mapped": "mapped", "mapping.status.unmapped": "unmapped", "mapping.status.partial": "partial",
+  "bottom.expand": "Expand bottom panel", "bottom.collapse": "Collapse bottom panel", "bottom.sample": "Sample", "bottom.compilation": "Compilation", "bottom.problems": "Problems", "bottom.noCapture": "No capture", "bottom.noCompilation": "No compilation yet. Press Run to analyze and start simulation.", "bottom.noProblems": "No problems reported.", "wave.ready": "Sample capture is ready", "wave.ready.help": "Run the simulation to capture the current mapped signal values.", "wave.current": "Current sample", "wave.low": "0 low", "wave.high": "1 high", "wave.showAll": "Show all", "wave.hide": "Hide {{port}}", "wave.allHidden": "All mapped signals are hidden.",
+  "compile.start": "Starting analysis...", "compile.blocked": "Analysis blocked. See Problems for details.", "compile.preview": "Preview analysis passed. GHDL analysis runs in the Tauri desktop app.", "compile.mappingWarning": "Mapping warning: {{message}}", "compile.success": "GHDL analysis completed successfully.", "compile.failed": "GHDL analysis failed. See Problems for details.", "simulation.success": "GHDL simulation completed successfully through {{time}}.", "simulation.notRunning": "Simulation session is not running.", "simulation.stopped": "Simulation session stopped: {{message}}", "pace.behind": "Behind: {{pace}}x", "pace.effective": "Effective pace: ~{{pace}}x", "pace.adjust": "Adjust clock constants before running.", "clock.tooltip": "Interactive simulation uses {{simulation}} board clocks.\nIf your VHDL uses hardware clock constants such as 50_000_000, adjust them for simulation, e.g. 1_000.\n{{physical}} · Sim clock: {{simulation}} · {{pace}}", "clock.hardware": "hardware", "resize.explorer": "Drag to resize explorer. Double-click to reset.", "resize.editor": "Drag to resize editor. Double-click to reset.", "resize.inspector": "Drag to resize inspector. Double-click to reset.", "resize.bottom": "Drag to resize bottom panel. Double-click to reset."
+};
+
+const messages: Record<Language, Record<string, string>> = { "pt-BR": ptBR, "en-US": enUS };
+export const languageStorageKey = "logicboard.language";
+export const resolveLanguage = (value: string | null): Language => value === "en-US" ? "en-US" : "pt-BR";
+export const translate = (language: Language, key: string, variables: Variables = {}) => {
+  const template = messages[language][key] ?? messages["pt-BR"][key] ?? key;
+  return template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(variables[name] ?? `{{${name}}}`));
+};
+
+type I18nContextValue = { language: Language; setLanguage: (language: Language) => void; t: (key: string, variables?: Variables) => string };
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<Language>(() => resolveLanguage(localStorage.getItem(languageStorageKey)));
+  useEffect(() => {
+    localStorage.setItem(languageStorageKey, language);
+    document.documentElement.lang = language;
+  }, [language]);
+  const value = useMemo(() => ({ language, setLanguage, t: (key: string, variables?: Variables) => translate(language, key, variables) }), [language]);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const value = useContext(I18nContext);
+  if (!value) throw new Error("useI18n must be used inside LanguageProvider.");
+  return value;
+}

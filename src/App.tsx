@@ -9,6 +9,7 @@ import {
   applyAssignment, expandAssignments, generateQsf, validateAssignments
 } from "./assignments/model";
 import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, UnsavedChangesDialog } from "./components/projects/ProjectControls";
+import { ApplicationSettingsDialog } from "./components/settings/ApplicationSettingsDialog";
 import { AssignmentMenu } from "./components/panels/AssignmentMenu";
 import { BoardView } from "./components/board/BoardView";
 import { EditorPanel } from "./components/panels/EditorPanel";
@@ -27,6 +28,7 @@ import { useProjectWorkspace } from "./projects/useProjectWorkspace";
 import { validateProjectManifest } from "./projects/model";
 import { isProjectSourceDirty, shouldContinueProjectAction } from "./projects/model";
 import type { LoadedProject, ProjectTemplate } from "./projects/model";
+import { useI18n } from "./i18n";
 
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
 type PaneSizes = { explorer: number; editor: number; inspector: number; bottom: number };
@@ -38,7 +40,7 @@ type SimulationInputEvent = { timeNs: number; portId: string; value: boolean };
 type SimulationSample = { timeNs: number; outputs: Record<string, boolean> };
 type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationSample[]; diagnostics: string[]; simulatedTimeNs: number };
 type SimulationSessionResult = SimulationResult & { sessionId: string };
-type ProjectDialog = "new" | "settings" | null;
+type ProjectDialog = "new" | "project-settings" | "application-settings" | null;
 
 const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: 190 };
 const defaultCollapsed: CollapsedPanes = { explorer: true, inspector: true, bottom: true };
@@ -73,6 +75,7 @@ function visualEndpointValue(endpoint: BoardEndpoint, inputs: Record<string, boo
 }
 
 export default function App() {
+  const { t } = useI18n();
   const workspace = useProjectWorkspace();
   const { project, manifest, assignments, setAssignments, setBoardId, setManifest, dirty: projectDirty, activeIsConstraints,
     activeSource, topSource, entityNames, setActivePath, updateActiveContent, load, markSaved, sourcePayloads, sourceStateKey, constraintsPath } = workspace;
@@ -134,12 +137,12 @@ export default function App() {
   const clockNotice = useMemo(() => {
     if (!simulationClocks.length) return null;
     const simulationLabels = Array.from(new Set(simulationClocks.map((clock) => formatFrequency(clock.simulationFrequencyHz))));
-    const physicalLabels = simulationClocks.map((clock) => `${clock.label}: hardware ${formatFrequency(clock.frequencyHz)}`);
+    const physicalLabels = simulationClocks.map((clock) => `${clock.label}: ${t("clock.hardware")} ${formatFrequency(clock.frequencyHz)}`);
     return {
       simulation: simulationLabels.join(" / "),
       physical: physicalLabels.join(", ")
     };
-  }, [simulationClocks]);
+  }, [simulationClocks, t]);
   const localProjectProblems = useMemo(() => {
     const localProblems = validateProjectManifest(manifest, project.sources);
     if (!ports.length) localProblems.push("The top entity has no supported in/out ports.");
@@ -255,7 +258,7 @@ export default function App() {
   const reportProjectError = (error: unknown) => {
     setRuntimeProblems([String(error)]);
     setBottomTab("problems");
-    void showProjectError(error);
+    void showProjectError(error, t("project.error.title"));
   };
 
   const replaceProject = (loaded: LoadedProject) => {
@@ -270,7 +273,7 @@ export default function App() {
 
   const persistProject = async (saveAs = false) => {
     if (!isDesktopApp()) {
-      reportProjectError("Project folders are available only in the Tauri desktop application.");
+      reportProjectError(t("project.desktopOnly"));
       return false;
     }
     setProjectBusy(true);
@@ -443,12 +446,12 @@ export default function App() {
   const compileProject = useCallback(async () => {
     setIsCompiling(true);
     setRuntimeProblems([]);
-    setCompilationLog(["Starting analysis..."]);
+    setCompilationLog([t("compile.start")]);
     setBottomTab("compilation");
 
     const localProblems = validateProject();
     if (localProblems.length) {
-      setCompilationLog(["Analysis blocked. See Problems for details."]);
+      setCompilationLog([t("compile.blocked")]);
       setBottomTab("problems");
       setIsCompiling(false);
       return false;
@@ -456,22 +459,22 @@ export default function App() {
 
     try {
       if (!isTauriApp()) {
-        setCompilationLog(["Preview analysis passed. GHDL analysis runs in the Tauri desktop app.", ...mappingProblems.map((item) => `Mapping warning: ${item}`)]);
+        setCompilationLog([t("compile.preview"), ...mappingProblems.map((item) => t("compile.mappingWarning", { message: item }))]);
         return true;
       }
       const { invoke } = await import("@tauri-apps/api/core");
       const result = await invoke<string[]>("analyze_project", { sources: sourcePayloads });
-      setCompilationLog([...(result.length ? result : ["GHDL analysis completed successfully."]), ...mappingProblems.map((item) => `Mapping warning: ${item}`)]);
+      setCompilationLog([...(result.length ? result : [t("compile.success")]), ...mappingProblems.map((item) => t("compile.mappingWarning", { message: item }))]);
       return true;
     } catch (error) {
       setRuntimeProblems([String(error)]);
-      setCompilationLog(["GHDL analysis failed. See Problems for details."]);
+      setCompilationLog([t("compile.failed")]);
       setBottomTab("problems");
       return false;
     } finally {
       setIsCompiling(false);
     }
-  }, [mappingProblems, sourcePayloads, validateProject]);
+  }, [mappingProblems, sourcePayloads, t, validateProject]);
 
   const stopSimulation = useCallback(() => {
     void stopActiveSimulationSession();
@@ -530,7 +533,7 @@ export default function App() {
       setCompilationLog((old) => [
         ...old,
         "",
-        ...(result.diagnostics.length ? result.diagnostics : [`GHDL simulation completed successfully through ${formatSimTime(result.simulatedTimeNs)}.`])
+        ...(result.diagnostics.length ? result.diagnostics : [t("simulation.success", { time: formatSimTime(result.simulatedTimeNs) })])
       ]);
       setSimState("running");
       setBottomTab("waveform");
@@ -539,11 +542,11 @@ export default function App() {
       const message = String(error);
       void stopActiveSimulationSession();
       setRuntimeProblems([message]);
-      setCompilationLog((old) => [...old, "", `Simulation session stopped: ${message}`]);
+      setCompilationLog((old) => [...old, "", t("simulation.stopped", { message })]);
       setBottomTab("problems");
       setSimState("stopped");
     } finally { setIsSimulating(false); }
-  }, [appendSimulationSamples, appendWaveSample, compileProject, inputPortValues, ports, recordPace, simulationClocks, source, sourcePayloads, stopActiveSimulationSession, topEntity]);
+  }, [appendSimulationSamples, appendWaveSample, compileProject, inputPortValues, ports, recordPace, simulationClocks, source, sourcePayloads, stopActiveSimulationSession, t, topEntity]);
 
   const updateRunningSimulation = useCallback(async () => {
     if (simulationAdvanceInFlightRef.current) return;
@@ -559,7 +562,7 @@ export default function App() {
       const { invoke } = await import("@tauri-apps/api/core");
       const sessionId = simulationSessionIdRef.current;
       if (!sessionId) {
-        throw new Error("Simulation session is not running.");
+        throw new Error(t("simulation.notRunning"));
       }
       const previousTimeNs = simulatedTimeNsRef.current;
       const wallNowMs = performance.now();
@@ -583,13 +586,13 @@ export default function App() {
       const message = String(error);
       void stopActiveSimulationSession();
       setRuntimeProblems([message]);
-      setCompilationLog((old) => [...old, "", `Simulation session stopped: ${message}`]);
+      setCompilationLog((old) => [...old, "", t("simulation.stopped", { message })]);
       setBottomTab("problems");
       setSimState("stopped");
     } finally {
       simulationAdvanceInFlightRef.current = false;
     }
-  }, [appendSimulationSamples, appendWaveSample, currentSimulationTargetNs, inputPortValues, ports, recordPace, source, sourceStateKey, stopActiveSimulationSession]);
+  }, [appendSimulationSamples, appendWaveSample, currentSimulationTargetNs, inputPortValues, ports, recordPace, source, sourceStateKey, stopActiveSimulationSession, t]);
 
   const handleBoardContext = useCallback((target: MappingTarget, event: React.MouseEvent) => {
     event.preventDefault();
@@ -646,7 +649,7 @@ export default function App() {
 
   const fileName = (path: string) => path.split("/").at(-1) ?? path;
   const activeContent = activeIsConstraints ? constraints : activeSource?.content ?? "";
-  const activeFileName = activeIsConstraints ? constraintsPath : fileName(activeSource?.path ?? "No source");
+  const activeFileName = activeIsConstraints ? constraintsPath : fileName(activeSource?.path ?? "");
   const editorTabs = [
     ...project.sources.map((item) => ({
       path: item.path,
@@ -662,75 +665,75 @@ export default function App() {
     "--bottom-height": `${collapsed.bottom ? 34 : paneSizes.bottom}px`
   } as CSSProperties;
   const isRunBusy = isCompiling || isSimulating;
-  const statusLabel = isCompiling ? "Compiling" : isSimulating ? "Starting" : simState === "stopped" ? "Ready" : "Running";
+  const statusLabel = isCompiling ? t("status.compiling") : isSimulating ? t("status.starting") : simState === "stopped" ? t("status.ready") : t("status.running");
   const paceLabel = simState === "running"
     ? simPace < speed * 0.9
-      ? `Behind: ${simPace.toFixed(2)}x`
-      : `Effective pace: ~${simPace.toFixed(2)}x`
-    : "Adjust clock constants before running.";
+      ? t("pace.behind", { pace: simPace.toFixed(2) })
+      : t("pace.effective", { pace: simPace.toFixed(2) })
+    : t("pace.adjust");
   const clockNoticeTooltip = clockNotice
-    ? `Interactive simulation uses ${clockNotice.simulation} board clocks.\nIf your VHDL uses hardware clock constants such as 50_000_000, adjust them for simulation, e.g. 1_000.\n${clockNotice.physical} · Sim clock: ${clockNotice.simulation} · ${paceLabel}`
+    ? t("clock.tooltip", { simulation: clockNotice.simulation, physical: clockNotice.physical, pace: paceLabel })
     : "";
 
   return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); }}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark"><Activity size={19} /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
       <div className="project-control" onClick={(event) => event.stopPropagation()}>
-        <button className="project-button" disabled={projectBusy} onClick={() => setProjectMenuOpen((open) => !open)}><FolderOpen size={16} /><div><small>PROJECT</small><b>{manifest.name}{projectDirty ? " •" : ""}</b></div><ChevronDown size={14} /></button>
+        <button className="project-button" disabled={projectBusy} onClick={() => setProjectMenuOpen((open) => !open)}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{manifest.name}{projectDirty ? " •" : ""}</b></div><ChevronDown size={14} /></button>
         {projectMenuOpen && <ProjectMenu
           onNew={() => { setProjectMenuOpen(false); setProjectDialog("new"); }}
           onOpen={() => { setProjectMenuOpen(false); void openExistingProject(); }}
           onSaveAs={() => { setProjectMenuOpen(false); void persistProject(true); }}
-          onSettings={() => { setProjectMenuOpen(false); setProjectDialog("settings"); }}
+          onSettings={() => { setProjectMenuOpen(false); setProjectDialog("project-settings"); }}
         />}
       </div>
       <div className="top-spacer" />
       <div className={`status ${isCompiling ? "compiling" : simState}`}><i />{statusLabel}</div>
-      <button className="icon-button" disabled={!projectDirty || projectBusy} title="Save project (Ctrl+S)" onClick={() => void persistProject()}><Save size={17} /></button>
-      <button className="icon-button" disabled={projectBusy} title="Project settings" onClick={() => setProjectDialog("settings")}><Settings2 size={17} /></button>
+      <button className="icon-button" disabled={!projectDirty || projectBusy} title={t("project.save.title")} onClick={() => void persistProject()}><Save size={17} /></button>
+      <button className="icon-button" title={t("settings.title")} onClick={() => setProjectDialog("application-settings")}><Settings2 size={17} /></button>
     </header>
 
     <div className="toolbar">
       <label className="board-select">
         <Cpu size={16} />
         <span>
-          <small>TARGET BOARD</small>
+          <small>{t("toolbar.targetBoard")}</small>
           <select
             value={selectedBoardId}
             onChange={(event) => {
               setBoardId(event.target.value);
               reset();
             }}
-            title={boards.length === 1 ? "Only EP2C20F484C7 is available right now" : "Changing boards resets the simulation"}
+            title={boards.length === 1 ? t("toolbar.onlyBoard") : t("toolbar.changeBoard")}
           >
-            {boards.map((board) => <option key={board.id} value={board.id}>{board.name} - {board.device}</option>)}
+            {boards.map((board) => <option key={board.id} value={board.id}>{t(`board.name.${board.id}`)} - {board.device}</option>)}
           </select>
         </span>
       </label>
       <div className="device-chip">{selectedBoard.device}</div>
       {clockNotice && <div className={`clock-notice ${simState === "running" ? "running" : ""}`} title={clockNoticeTooltip} aria-label={clockNoticeTooltip}>
         <Info size={14} />
-        <span>Interactive simulation uses {clockNotice.simulation} board clocks.</span>
+        <span>{t("toolbar.clockNotice", { frequency: clockNotice.simulation })}</span>
       </div>}
       <div className="toolbar-spacer" />
       <button className={`control ${simState === "running" ? "quiet" : ""}`} disabled={simState !== "running" && isRunBusy} onClick={() => simState === "running" ? stopSimulation() : void runSimulation()}>
-        {simState === "running" ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" ? "Stop" : isCompiling ? "Compiling..." : isSimulating ? "Starting..." : "Run"}
+        {simState === "running" ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" ? t("toolbar.stop") : isCompiling ? t("toolbar.compiling") : isSimulating ? t("toolbar.starting") : t("toolbar.run")}
       </button>
-      <button className="icon-button" onClick={reset} title="Reset simulation"><RotateCcw size={16} /></button>
+      <button className="icon-button" onClick={reset} title={t("toolbar.reset")}><RotateCcw size={16} /></button>
       <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>
     </div>
 
     <main className={`workspace ${collapsed.explorer ? "explorer-collapsed" : ""} ${collapsed.inspector ? "inspector-collapsed" : ""} ${collapsed.bottom ? "bottom-collapsed" : ""}`} style={workspaceStyle}>
       <aside className="files-panel">
-        {collapsed.explorer ? <button className="panel-rail compact" title="Expand explorer" onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
-          <div className="panel-heading"><span>EXPLORER</span><button className="collapse-button" title="Collapse explorer" onClick={() => togglePane("explorer")}>‹</button></div>
+        {collapsed.explorer ? <button className="panel-rail compact" title={t("explorer.expand")} onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
+          <div className="panel-heading"><span>{t("explorer.title")}</span><button className="collapse-button" title={t("explorer.collapse")} onClick={() => togglePane("explorer")}>‹</button></div>
           <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
           {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
-          <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>generated</em></button>
-          <div className="files-footer"><div><span>TOP ENTITY</span><strong>{topEntity}</strong></div></div>
+          <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>{t("common.generated")}</em></button>
+          <div className="files-footer"><div><span>{t("explorer.topEntity")}</span><strong>{topEntity}</strong></div></div>
         </>}
       </aside>
-      <div className="resize-handle vertical explorer-handle" title="Drag to resize explorer. Double-click to reset." onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />
+      <div className="resize-handle vertical explorer-handle" title={t("resize.explorer")} onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />
 
       <EditorPanel
         tabs={editorTabs}
@@ -741,10 +744,10 @@ export default function App() {
         onSelect={setActivePath}
         onChange={updateActiveContent}
       />
-      <div className="resize-handle vertical editor-handle" title="Drag to resize editor. Double-click to reset." onPointerDown={(event) => startResize("editor", event)} onDoubleClick={() => resetPane("editor")} />
+      <div className="resize-handle vertical editor-handle" title={t("resize.editor")} onPointerDown={(event) => startResize("editor", event)} onDoubleClick={() => resetPane("editor")} />
 
       <section className="board-panel">
-        <div className="section-title"><div><span>INTERACTIVE BOARD</span><small>Right-click a block for vector mapping, or a pin/segment for granular mapping</small></div></div>
+        <div className="section-title"><div><span>{t("board.title")}</span><small>{t("board.instructions")}</small></div></div>
         <BoardView
           board={selectedBoard}
           expandedAssignments={expandedAssignments}
@@ -753,9 +756,9 @@ export default function App() {
           onContext={handleBoardContext}
           onInput={handleBoardInput}
         />
-        <div className="board-tip"><Unplug size={15} /><span><b>{expandedAssignments.length} physical pins assigned</b> - generated Quartus constraints update automatically.</span></div>
+        <div className="board-tip"><Unplug size={15} /><span><b>{t("board.assignedPins", { count: expandedAssignments.length })}</b> - {t("board.constraintsUpdate")}</span></div>
       </section>
-      <div className="resize-handle vertical inspector-handle" title="Drag to resize inspector. Double-click to reset." onPointerDown={(event) => startResize("inspector", event)} onDoubleClick={() => resetPane("inspector")} />
+      <div className="resize-handle vertical inspector-handle" title={t("resize.inspector")} onPointerDown={(event) => startResize("inspector", event)} onDoubleClick={() => resetPane("inspector")} />
 
       <InspectorPanel
         board={selectedBoard}
@@ -771,15 +774,15 @@ export default function App() {
         onAssign={assign}
         onClear={clearAssignment}
       />
-      <div className="resize-handle horizontal bottom-handle" title="Drag to resize waveform panel. Double-click to reset." onPointerDown={(event) => startResize("bottom", event)} onDoubleClick={() => resetPane("bottom")} />
+      <div className="resize-handle horizontal bottom-handle" title={t("resize.bottom")} onPointerDown={(event) => startResize("bottom", event)} onDoubleClick={() => resetPane("bottom")} />
 
       <section className="bottom-panel">
-        <div className="bottom-tabs"><button className="collapse-button" title={collapsed.bottom ? "Expand bottom panel" : "Collapse bottom panel"} onClick={() => togglePane("bottom")}>{collapsed.bottom ? "⌃" : "⌄"}</button><button className={bottomTab === "waveform" ? "active" : ""} onClick={() => setBottomTab("waveform")}><Activity size={14} />Sample</button><button className={bottomTab === "compilation" ? "active" : ""} onClick={() => setBottomTab("compilation")}><TerminalSquare size={14} />Compilation</button><button className={bottomTab === "problems" ? "active" : ""} onClick={() => setBottomTab("problems")}><Info size={14} />Problems <i>{problems.length}</i></button><span /> <small>{waveform.length ? `${timeRef.current} ns` : "No capture"}</small></div>
+        <div className="bottom-tabs"><button className="collapse-button" title={collapsed.bottom ? t("bottom.expand") : t("bottom.collapse")} onClick={() => togglePane("bottom")}>{collapsed.bottom ? "⌃" : "⌄"}</button><button className={bottomTab === "waveform" ? "active" : ""} onClick={() => setBottomTab("waveform")}><Activity size={14} />{t("bottom.sample")}</button><button className={bottomTab === "compilation" ? "active" : ""} onClick={() => setBottomTab("compilation")}><TerminalSquare size={14} />{t("bottom.compilation")}</button><button className={bottomTab === "problems" ? "active" : ""} onClick={() => setBottomTab("problems")}><Info size={14} />{t("bottom.problems")} <i>{problems.length}</i></button><span /> <small>{waveform.length ? `${timeRef.current} ns` : t("bottom.noCapture")}</small></div>
         {!collapsed.bottom && (bottomTab === "waveform"
           ? <Waveform samples={waveform} assignments={expandedAssignments} />
           : bottomTab === "compilation"
-            ? <LogPanel lines={compilationLog} empty="No compilation yet. Press Run to analyze and start simulation." />
-            : <LogPanel lines={problems} empty="No problems reported." problem />)}
+            ? <LogPanel lines={compilationLog} empty={t("bottom.noCompilation")} />
+            : <LogPanel lines={problems} empty={t("bottom.noProblems")} problem />)}
       </section>
     </main>
 
@@ -804,7 +807,7 @@ export default function App() {
       onOpen={() => { setProjectDialog(null); void openExistingProject(); }}
       onCreate={(name, folderName, templateId) => void createNewProject(name, folderName, templateId)}
     />}
-    {projectDialog === "settings" && <ProjectSettingsDialog
+    {projectDialog === "project-settings" && <ProjectSettingsDialog
       name={manifest.name}
       boardId={manifest.boardId}
       topEntity={manifest.topEntity}
@@ -813,6 +816,7 @@ export default function App() {
       onCancel={() => setProjectDialog(null)}
       onSave={(settings) => { setManifest(settings); reset(); setProjectDialog(null); }}
     />}
+    {projectDialog === "application-settings" && <ApplicationSettingsDialog onCancel={() => setProjectDialog(null)} />}
     {unsavedOpen && <UnsavedChangesDialog
       projectName={manifest.name}
       onSave={() => void continuePendingAction("save")}
