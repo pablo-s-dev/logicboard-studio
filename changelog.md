@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added the versioned `logicboard.project.json` format for ordered VHDL sources, target board and top entity settings, and board assignments.
 - Added restricted Tauri commands to list templates and create, open, save, and save projects as real local folders.
 - Added native folder selection through the official Tauri dialog plugin and blocking error dialogs for operations that cannot continue.
+- Added the narrowly scoped Tauri window permission required to destroy the window after a confirmed Save or Discard close decision.
 - Added active-project state with saved baselines, source-level dirty markers, multiple editor tabs, a generated constraints tab, and top-entity discovery across files.
 - Added Project menu actions, Project Settings, a New Project template chooser, toolbar Save, `Ctrl+S`, and Save/Discard/Cancel protection for project replacement and application close.
 - Added one-time recovery of legacy source and assignment data as an unsaved `Recovered board-demo` project; migrated keys are removed only after a successful save.
