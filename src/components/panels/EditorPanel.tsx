@@ -2,13 +2,23 @@ import { useLayoutEffect, useRef } from "react";
 import { FileCode2 } from "lucide-react";
 
 type EditorPanelProps = {
+  tabs: EditorTab[];
+  activePath: string;
   activeFileName: string;
   activeContent: string;
   readOnly: boolean;
+  onSelect: (path: string) => void;
   onChange: (value: string) => void;
 };
 
-export function EditorPanel({ activeFileName, activeContent, readOnly, onChange }: EditorPanelProps) {
+export type EditorTab = {
+  path: string;
+  name: string;
+  modified?: boolean;
+  readOnly?: boolean;
+};
+
+export function EditorPanel({ tabs, activePath, activeFileName, activeContent, readOnly, onSelect, onChange }: EditorPanelProps) {
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -22,11 +32,17 @@ export function EditorPanel({ activeFileName, activeContent, readOnly, onChange 
 
   return <section className="editor-panel">
     <div className="editor-tabs">
-      <div className="editor-tab active">
+      {tabs.map((tab) => <button
+        type="button"
+        key={tab.path}
+        className={`editor-tab ${activePath === tab.path ? "active" : ""}`}
+        title={tab.path}
+        onClick={() => onSelect(tab.path)}
+      >
         <FileCode2 size={14} />
-        <span className="editor-tab-name">{activeFileName}</span>
-        {readOnly ? <em>read-only</em> : <i>modified</i>}
-      </div>
+        <span className="editor-tab-name">{tab.name}</span>
+        {tab.readOnly ? <em>read-only</em> : tab.modified ? <i>modified</i> : null}
+      </button>)}
     </div>
     <div className={`editor-wrap ${readOnly ? "read-only" : ""}`}>
       <div className="line-numbers" aria-hidden="true">

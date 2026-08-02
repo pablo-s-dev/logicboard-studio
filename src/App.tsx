@@ -611,7 +611,18 @@ export default function App() {
       </aside>
       <div className="resize-handle vertical explorer-handle" title="Drag to resize explorer. Double-click to reset." onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />
 
-      <EditorPanel activeFileName={activeFileName} activeContent={activeContent} readOnly={activeFile === "constraints"} onChange={setSource} />
+      <EditorPanel
+        tabs={[
+          { path: "source", name: "board_demo.vhd", modified: true },
+          { path: "constraints", name: "constraints.qsf", readOnly: true }
+        ]}
+        activePath={activeFile}
+        activeFileName={activeFileName}
+        activeContent={activeContent}
+        readOnly={activeFile === "constraints"}
+        onSelect={(path) => setActiveFile(path as ActiveFile)}
+        onChange={setSource}
+      />
       <div className="resize-handle vertical editor-handle" title="Drag to resize editor. Double-click to reset." onPointerDown={(event) => startResize("editor", event)} onDoubleClick={() => resetPane("editor")} />
 
       <section className="board-panel">
