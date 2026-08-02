@@ -188,7 +188,21 @@ fn load_project_root(root: &Path) -> Result<LoadedProject, String> {
         let checked = checked_existing_source(&root, &path)?;
         sources.push(ProjectSource { path: relative.clone(), content: read_utf8_limited(&checked, MAX_SOURCE_BYTES, "VHDL source")? });
     }
+    validate_top_entity(&manifest, &sources)?;
     Ok(LoadedProject { root_path: root.to_string_lossy().to_string(), manifest, sources })
+}
+
+fn validate_top_entity(manifest: &ProjectManifest, sources: &[ProjectSource]) -> Result<(), String> {
+    let target = manifest.top_entity.to_ascii_lowercase();
+    let found = sources.iter().any(|source| {
+        let tokens: Vec<String> = source.content
+            .split(|character: char| !character.is_ascii_alphanumeric() && character != '_')
+            .filter(|token| !token.is_empty())
+            .map(str::to_ascii_lowercase)
+            .collect();
+        tokens.windows(3).any(|tokens| tokens[0] == "entity" && tokens[1] == target && tokens[2] == "is")
+    });
+    if found { Ok(()) } else { Err(format!("Top entity {} was not found in the project sources.", manifest.top_entity)) }
 }
 
 fn validate_save_request(request: &ProjectSaveRequest) -> Result<Vec<PathBuf>, String> {
@@ -204,6 +218,7 @@ fn validate_save_request(request: &ProjectSaveRequest) -> Result<Vec<PathBuf>, S
             return Err(format!("VHDL source exceeds the {MAX_SOURCE_BYTES} byte limit: {}", source.path));
         }
     }
+    validate_top_entity(&request.manifest, &request.sources)?;
     Ok(paths)
 }
 
@@ -335,6 +350,7 @@ pub fn open_project(project_path: String) -> Result<LoadedProject, String> {
 #[tauri::command]
 pub fn save_project(project_path: String, project: ProjectSaveRequest) -> Result<LoadedProject, String> {
     let root = canonical_project_root(Path::new(&project_path))?;
+    load_project_root(&root)?;
     transactional_write(&root, &project)?;
     load_project_root(&root)
 }
@@ -383,7 +399,7 @@ mod tests {
                 sources: vec!["src/top.vhd".into()],
                 assignments: vec![],
             },
-            sources: vec![ProjectSource { path: "src/top.vhd".into(), content: content.into() }],
+            sources: vec![ProjectSource { path: "src/top.vhd".into(), content: format!("entity top is end entity;\n-- {content}") }],
         }
     }
 
@@ -409,12 +425,12 @@ mod tests {
     fn creates_opens_saves_and_saves_as_projects() {
         let parent = TestDir::new("roundtrip");
         let created = create_from_request(&parent.0, "first", &request("old")).unwrap();
-        assert_eq!(created.sources[0].content, "old");
+        assert!(created.sources[0].content.contains("old"));
         let root = PathBuf::from(&created.root_path);
         transactional_write(&root, &request("new")).unwrap();
-        assert_eq!(load_project_root(&root).unwrap().sources[0].content, "new");
+        assert!(load_project_root(&root).unwrap().sources[0].content.contains("new"));
         let copied = create_from_request(&parent.0, "second", &request("copy")).unwrap();
-        assert_eq!(copied.sources[0].content, "copy");
+        assert!(copied.sources[0].content.contains("copy"));
         assert_ne!(created.root_path, copied.root_path);
     }
 
@@ -433,7 +449,8 @@ mod tests {
         transactional_write(&root.0, &request("original")).unwrap();
         assert!(transactional_write_inner(&root.0, &request("replacement"), Some(1)).is_err());
         let loaded = load_project_root(&root.0).unwrap();
-        assert_eq!(loaded.sources[0].content, "original");
+        assert!(loaded.sources[0].content.contains("original"));
+        assert!(!loaded.sources[0].content.contains("replacement"));
         assert_eq!(loaded.manifest.name, "Test project");
     }
 
