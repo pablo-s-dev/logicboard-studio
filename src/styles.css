@@ -116,7 +116,8 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .editor-tab em { color: #7f8d95; }
 .editor-wrap { position: relative; display: flex; flex: 1; overflow: hidden; padding-top: 0; }
 .editor-wrap.read-only { background: #0f1518; }
-.line-numbers { width: 37px; display: flex; flex-direction: column; align-items: flex-end; padding: 10px 10px 20px 0; color: #3f4c55; font: 11px/20px "IBM Plex Mono", monospace; user-select: none; }
+.line-numbers { width: 37px; flex: 0 0 37px; overflow: hidden; color: #3f4c55; font: 11px/20px "IBM Plex Mono", monospace; user-select: none; }
+.line-numbers-inner { width: 100%; display: flex; flex-direction: column; align-items: flex-end; padding: 10px 10px 20px 0; }
 .editor-wrap textarea { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: #cbd3d8; padding: 10px 0 20px 0; white-space: pre; overflow: auto; font: 11px/20px "IBM Plex Mono", monospace; tab-size: 2; caret-color: var(--cyan); scrollbar-gutter: stable; }
 .editor-wrap.read-only textarea { color: #aebbc2; }
 
@@ -376,4 +377,3 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   .bottom-tabs { overflow-x: auto; }
   .waveform { --wave-label-width: 136px; }
 }
-
