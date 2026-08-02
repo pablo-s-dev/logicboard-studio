@@ -1,29 +1,15 @@
 import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { normalizeAssignments } from "../assignments/model";
 import type { Assignment } from "../types";
 import {
   isProjectDirty, loadedProjectState, projectEntityNames, projectSnapshot, sourceContainingEntity,
-  starterAssignments, starterVhdl, untitledProject
+  recoverLegacyProject
 } from "./model";
 import type { LoadedProject, ProjectManifest, ProjectState } from "./model";
 
 const constraintsPath = "constraints.qsf";
 
-const loadLegacyAssignments = () => {
-  try {
-    const raw = localStorage.getItem("logicboard.assignments.v4");
-    return raw ? normalizeAssignments(JSON.parse(raw) as Partial<Assignment>[]) : starterAssignments;
-  } catch {
-    return starterAssignments;
-  }
-};
-
-const initialProject = () => {
-  const legacySource = localStorage.getItem("logicboard.source.v3");
-  const hasLegacy = legacySource !== null || localStorage.getItem("logicboard.assignments.v4") !== null;
-  return untitledProject(legacySource ?? starterVhdl, loadLegacyAssignments(), hasLegacy);
-};
+const initialProject = () => recoverLegacyProject((key) => localStorage.getItem(key));
 
 export function useProjectWorkspace() {
   const [project, setProject] = useState<ProjectState>(initialProject);

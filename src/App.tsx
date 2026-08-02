@@ -25,7 +25,7 @@ import { parseEntityPorts, previewOutputs } from "./vhdl";
 import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, saveProject, saveProjectAs } from "./projects/api";
 import { useProjectWorkspace } from "./projects/useProjectWorkspace";
 import { validateProjectManifest } from "./projects/model";
-import { isProjectSourceDirty } from "./projects/model";
+import { isProjectSourceDirty, shouldContinueProjectAction } from "./projects/model";
 import type { LoadedProject, ProjectTemplate } from "./projects/model";
 
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
@@ -332,10 +332,11 @@ export default function App() {
     });
   };
 
-  const continuePendingAction = async (saveFirst: boolean) => {
+  const continuePendingAction = async (decision: "save" | "discard") => {
     const action = pendingProjectActionRef.current;
     if (!action) return;
-    if (saveFirst && !(await persistProject())) return;
+    const saveSucceeded = decision === "save" ? await persistProject() : false;
+    if (!shouldContinueProjectAction(decision, saveSucceeded)) return;
     pendingProjectActionRef.current = null;
     setUnsavedOpen(false);
     await action();
@@ -812,8 +813,8 @@ export default function App() {
     />}
     {unsavedOpen && <UnsavedChangesDialog
       projectName={manifest.name}
-      onSave={() => void continuePendingAction(true)}
-      onDiscard={() => void continuePendingAction(false)}
+      onSave={() => void continuePendingAction("save")}
+      onDiscard={() => void continuePendingAction("discard")}
       onCancel={() => { pendingProjectActionRef.current = null; setUnsavedOpen(false); }}
     />}
   </div>;

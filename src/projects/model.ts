@@ -119,6 +119,26 @@ export function untitledProject(source = starterVhdl, assignments: Assignment[] 
   };
 }
 
+export function recoverLegacyProject(getItem: (key: string) => string | null) {
+  const storedSource = getItem("logicboard.source.v3");
+  const storedAssignments = getItem("logicboard.assignments.v4");
+  let assignments = starterAssignments;
+  if (storedAssignments !== null) {
+    try {
+      assignments = normalizeAssignments(JSON.parse(storedAssignments) as Partial<Assignment>[]);
+    } catch {
+      assignments = starterAssignments;
+    }
+  }
+  return untitledProject(storedSource ?? starterVhdl, assignments, storedSource !== null || storedAssignments !== null);
+}
+
+export type UnsavedDecision = "save" | "discard" | "cancel";
+
+export function shouldContinueProjectAction(decision: UnsavedDecision, saveSucceeded = false) {
+  return decision === "discard" || (decision === "save" && saveSucceeded);
+}
+
 export function projectEntityNames(sources: ProjectSource[]) {
   return Array.from(new Set(sources.flatMap((source) => parseEntityNames(source.content))));
 }
