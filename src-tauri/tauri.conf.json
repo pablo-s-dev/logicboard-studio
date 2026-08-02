@@ -18,7 +18,8 @@
     "targets": "all",
     "icon": ["icons/icon.ico"],
     "resources": {
-      "resources/ghdl": "ghdl"
+      "resources/ghdl": "ghdl",
+      "templates": "templates"
     }
   }
 }
