@@ -43,11 +43,11 @@ Planned commits:
 
 ## Native project format
 
-- [ ] Define a versioned `logicboard.project.json` manifest.
-- [ ] Store `schemaVersion`, project name, target board ID, top entity, ordered VHDL source paths, and pin assignments.
-- [ ] Keep editable VHDL files under `src/` and treat `constraints.qsf` as generated output.
-- [ ] Reject absolute source paths, traversal outside the project root, unsupported extensions, duplicate paths, missing files, unsupported schema versions, unknown boards, and invalid assignments.
-- [ ] Add clear validation errors that identify the manifest field or source involved.
+- [x] Define a versioned `logicboard.project.json` manifest.
+- [x] Store `schemaVersion`, project name, target board ID, top entity, ordered VHDL source paths, and pin assignments.
+- [x] Keep editable VHDL files under `src/` and treat `constraints.qsf` as generated output.
+- [x] Reject absolute source paths, traversal outside the project root, unsupported extensions, duplicate paths, missing files, unsupported schema versions, unknown boards, invalid top entities, and malformed assignments.
+- [x] Add clear validation errors that identify the manifest field or source involved.
 
 The initial manifest contract will be:
 
@@ -55,7 +55,7 @@ The initial manifest contract will be:
 {
   "schemaVersion": 1,
   "name": "board-demo",
-  "boardId": "cyclone-ii-ep2c20f484c7",
+  "boardId": "ep2c20f484c7",
   "topEntity": "board_demo",
   "sources": ["src/board_demo.vhd"],
   "assignments": []
@@ -70,17 +70,17 @@ Planned commit:
 
 ## Tauri persistence and project lifecycle
 
-- [ ] Add Tauri commands for create, open, save, and save-as operations.
-- [ ] Canonicalize the selected root and enforce that every read or write stays inside it.
-- [ ] Write saves through temporary files followed by replacement so a failed save does not truncate project data.
-- [ ] Pass all ordered project sources to the existing `analyze_project` and simulation commands.
-- [ ] Replace the global source and assignment storage with active-project state.
-- [ ] Support multiple editable source tabs plus the generated constraints tab.
-- [ ] Track dirty state per source and for manifest-backed settings.
-- [ ] Enable the Save toolbar action and `Ctrl+S`.
-- [ ] Confirm before closing, switching, or replacing a project with unsaved changes.
-- [ ] Report filesystem and manifest failures in the existing Problems or Compilation panels.
-- [ ] Remove project dependence on browser `localStorage`; pane layout preferences may remain global.
+- [x] Add Tauri commands for listing templates and creating, opening, saving, and saving-as projects.
+- [x] Canonicalize the selected root and enforce that every read or write stays inside it.
+- [x] Stage every file, retain backups during replacement, replace the manifest last, and roll back a failed save.
+- [x] Pass all ordered project sources to the existing `analyze_project` and simulation commands.
+- [x] Replace the global source and assignment storage with active-project state.
+- [x] Support multiple editable source tabs plus the generated constraints tab.
+- [x] Track dirty state per source and for manifest-backed settings.
+- [x] Enable the Save toolbar action and `Ctrl+S`.
+- [x] Confirm before closing, switching, or replacing a project with unsaved changes.
+- [x] Report filesystem and manifest failures in Problems and show a blocking native error dialog when an operation cannot continue.
+- [x] Limit project persistence to native commands; only pane preferences and one-time legacy recovery use browser `localStorage`.
 
 Acceptance criteria:
 
@@ -97,13 +97,13 @@ Planned commits:
 
 ## Template projects
 
-- [ ] Bundle immutable templates and copy the selected template into a user-chosen empty destination.
-- [ ] Add an LED and switch mirror demonstrating introductory combinational logic.
-- [ ] Add a pushbutton and seven-segment example demonstrating mappings and active-low signals.
-- [ ] Add a four-digit timer based on `src/fixtures/timer_top.vhd` demonstrating clocks, sequential logic, and simulation pacing.
-- [ ] Include a valid manifest, ready-to-run mappings, commented VHDL sources, and a short README in every template.
-- [ ] Add a New Project dialog with blank-project and template choices.
-- [ ] Ensure editing or deleting a created project never changes the bundled template.
+- [x] Bundle immutable templates and copy the selected template into a new child folder at a user-chosen location.
+- [x] Add an LED and switch mirror demonstrating introductory combinational logic.
+- [x] Add a pushbutton and seven-segment example demonstrating mappings and active-low signals.
+- [x] Add a four-digit timer adapted for the 1 kHz interactive clock, with 50 MHz hardware guidance.
+- [x] Include a valid manifest, ready-to-run mappings, commented VHDL sources, and a short README in every template.
+- [x] Add a New Project dialog with blank-project and template choices.
+- [x] Ensure created projects are independent copies of the bundled templates.
 
 Acceptance criteria:
 
@@ -118,11 +118,11 @@ Planned commits:
 
 ## Project hardening
 
-- [ ] Test malformed manifests, traversal attempts, missing sources, duplicate sources, unknown boards, and invalid mappings.
-- [ ] Test interrupted or denied saves and verify recovery behavior.
-- [ ] Test unsaved-change prompts for project switching and application close.
-- [ ] Test multi-file compilation order and top-entity selection.
-- [ ] Test template copying, independence, compilation, and reopening saved projects.
+- [x] Test malformed manifests, traversal and symlink attempts, missing or oversized sources, duplicate sources, unknown boards, and malformed assignments.
+- [x] Inject an interrupted transactional save and verify that replaced files are restored.
+- [x] Test Save/Discard/Cancel transition decisions and manually verify the unsaved-change prompt.
+- [x] Test ordered multi-file payloads and top-entity selection across sources.
+- [x] Test template loading, independent copies, reopening saved projects, and analyze every bundled VHDL source with GHDL.
 - [ ] Run the full frontend suite and Rust tests in CI.
 
 Planned commit:
@@ -133,7 +133,7 @@ Planned commit:
 
 - [x] Add this implementation roadmap.
 - [x] Add `changelog.md` with an Unreleased section.
-- [ ] Update the changelog with every user-visible code or documentation change.
+- [x] Update the changelog with every user-visible code or documentation change in this delivery.
 - [ ] Move Unreleased entries into a dated version section when preparing a release.
 
 Planned commits:
@@ -143,5 +143,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 20 tests passing in one test file after this delivery.
-- `npm run build`: TypeScript and Vite production build passing after this delivery.
+- `npm test`: 27 tests passing across three test files.
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 16 tests passing.
+- Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
+- `npm run build`: TypeScript and Vite production build passing.
