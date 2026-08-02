@@ -1,13 +1,15 @@
 {
   "name": "logicboard-studio",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "prepare:ghdl": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-ghdl.ps1",
+    "build:windows": "npm run prepare:ghdl && npm run tauri -- build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.5.0",
