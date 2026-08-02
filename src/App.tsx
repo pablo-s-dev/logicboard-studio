@@ -6,9 +6,9 @@ import {
 } from "lucide-react";
 import { boards, cycloneII } from "./board";
 import {
-  applyAssignment, expandAssignments, generateQsf, normalizeAssignments,
-  validateAssignments
+  applyAssignment, expandAssignments, generateQsf, validateAssignments
 } from "./assignments/model";
+import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, UnsavedChangesDialog } from "./components/projects/ProjectControls";
 import { AssignmentMenu } from "./components/panels/AssignmentMenu";
 import { BoardView } from "./components/board/BoardView";
 import { EditorPanel } from "./components/panels/EditorPanel";
@@ -21,38 +21,13 @@ import {
 } from "./simulation";
 import type { SimulationClockConfig } from "./simulation";
 import type { Assignment, BoardEndpoint, EntityPort, MappingMode, MappingTarget, WaveSample } from "./types";
-import { parseEntityName, parseEntityPorts, previewOutputs } from "./vhdl";
+import { parseEntityPorts, previewOutputs } from "./vhdl";
+import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, saveProject, saveProjectAs } from "./projects/api";
+import { useProjectWorkspace } from "./projects/useProjectWorkspace";
+import { validateProjectManifest } from "./projects/model";
+import { isProjectSourceDirty } from "./projects/model";
+import type { LoadedProject, ProjectTemplate } from "./projects/model";
 
-const starterVhdl = `library ieee;
-use ieee.std_logic_1164.all;
-
-entity board_demo is
-  port (
-    SW       : in  std_logic_vector(9 downto 0);
-    KEY      : in  std_logic_vector(3 downto 0);
-    CLOCK_50 : in  std_logic;
-    LEDR     : out std_logic_vector(9 downto 0);
-    LEDG     : out std_logic_vector(7 downto 0)
-  );
-end entity;
-
-architecture rtl of board_demo is
-begin
-  LEDR <= SW;
-  LEDG(0) <= not KEY(0);
-  LEDG(1) <= SW(0);
-end architecture;
-`;
-
-const initialAssignments: Assignment[] = [
-  { id: "vector:SW:SW", kind: "vector", endpointId: "SW", portId: "SW" },
-  { id: "vector:KEY:KEY", kind: "vector", endpointId: "KEY", portId: "KEY" },
-  { id: "vector:LEDR:LEDR", kind: "vector", endpointId: "LEDR", portId: "LEDR" },
-  { id: "vector:LEDG:LEDG", kind: "vector", endpointId: "LEDG", portId: "LEDG" },
-  { id: "granular:CLOCK_50:CLOCK_50", kind: "granular", endpointId: "CLOCK_50", portId: "CLOCK_50" }
-];
-
-type ActiveFile = "source" | "constraints";
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
 type PaneSizes = { explorer: number; editor: number; inspector: number; bottom: number };
 type CollapsedPanes = { explorer: boolean; inspector: boolean; bottom: boolean };
@@ -63,6 +38,7 @@ type SimulationInputEvent = { timeNs: number; portId: string; value: boolean };
 type SimulationSample = { timeNs: number; outputs: Record<string, boolean> };
 type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationSample[]; diagnostics: string[]; simulatedTimeNs: number };
 type SimulationSessionResult = SimulationResult & { sessionId: string };
+type ProjectDialog = "new" | "settings" | null;
 
 const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: 190 };
 const defaultCollapsed: CollapsedPanes = { explorer: true, inspector: true, bottom: true };
@@ -79,7 +55,7 @@ const loadStored = <T,>(key: string, fallback: T): T => {
   try { return JSON.parse(localStorage.getItem(key) ?? "") as T; } catch { return fallback; }
 };
 
-const isTauriApp = () => "__TAURI_INTERNALS__" in window;
+const isTauriApp = isDesktopApp;
 const clamp = (value: number, [min, max]: [number, number]) => Math.min(max, Math.max(min, value));
 const formatSimTime = (ns: number) => ns >= 1_000_000
   ? `${(ns / 1_000_000).toFixed(1)} ms`
@@ -97,8 +73,11 @@ function visualEndpointValue(endpoint: BoardEndpoint, inputs: Record<string, boo
 }
 
 export default function App() {
-  const [source, setSource] = useState(() => localStorage.getItem("logicboard.source.v3") ?? starterVhdl);
-  const [assignments, setAssignments] = useState<Assignment[]>(() => normalizeAssignments(loadStored("logicboard.assignments.v4", initialAssignments)));
+  const workspace = useProjectWorkspace();
+  const { project, manifest, assignments, setAssignments, setBoardId, setManifest, dirty: projectDirty, activeIsConstraints,
+    activeSource, topSource, entityNames, setActivePath, updateActiveContent, load, markSaved, sourcePayloads, sourceStateKey, constraintsPath } = workspace;
+  const source = topSource?.content ?? "";
+  const selectedBoardId = manifest.boardId;
   const [inputs, setInputs] = useState<Record<string, boolean>>({ KEY0: true, KEY1: true, KEY2: true, KEY3: true });
   const [simulatedOutputs, setSimulatedOutputs] = useState<Record<string, boolean> | null>(null);
   const [simState, setSimState] = useState<SimState>("stopped");
@@ -107,9 +86,12 @@ export default function App() {
   const [signalSearch, setSignalSearch] = useState("");
   const [inspectorView, setInspectorView] = useState<InspectorView>("assignments");
   const [inspectorSearch, setInspectorSearch] = useState("");
-  const [activeFile, setActiveFile] = useState<ActiveFile>("source");
   const [bottomTab, setBottomTab] = useState<BottomTab>("waveform");
-  const [selectedBoardId, setSelectedBoardId] = useState(cycloneII.id);
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  const [projectDialog, setProjectDialog] = useState<ProjectDialog>(() => isDesktopApp() && !project.legacyRecovered ? "new" : null);
+  const [projectTemplates, setProjectTemplates] = useState<ProjectTemplate[]>([]);
+  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const [projectBusy, setProjectBusy] = useState(false);
   const [paneSizes, setPaneSizes] = useState<PaneSizes>(() => loadStored("logicboard.paneSizes", defaultPaneSizes));
   const [collapsed, setCollapsed] = useState<CollapsedPanes>(() => loadStored("logicboard.collapsedPanes.v2", defaultCollapsed));
   const [waveform, setWaveform] = useState<WaveSample[]>([]);
@@ -131,11 +113,12 @@ export default function App() {
   const initialInputPortValuesRef = useRef<Record<string, boolean>>({});
   const simulationSessionIdRef = useRef<string | null>(null);
   const simulationAdvanceInFlightRef = useRef(false);
+  const pendingProjectActionRef = useRef<(() => Promise<void>) | null>(null);
   const previousInputsRef = useRef(inputs);
   const lastAnalyzedSourceRef = useRef<string | null>(null);
   const analysisRevisionRef = useRef(0);
 
-  const topEntity = useMemo(() => parseEntityName(source), [source]);
+  const topEntity = manifest.topEntity;
   const selectedBoard = useMemo(() => boards.find((board) => board.id === selectedBoardId) ?? cycloneII, [selectedBoardId]);
   const ports = useMemo(() => parseEntityPorts(source), [source]);
   const expandedAssignments = useMemo(() => expandAssignments(assignments, selectedBoard, ports), [assignments, ports, selectedBoard]);
@@ -158,11 +141,10 @@ export default function App() {
     };
   }, [simulationClocks]);
   const localProjectProblems = useMemo(() => {
-    const localProblems: string[] = [];
-    if (!topEntity) localProblems.push("No VHDL entity declaration found.");
+    const localProblems = validateProjectManifest(manifest, project.sources);
     if (!ports.length) localProblems.push("The top entity has no supported in/out ports.");
     return localProblems;
-  }, [ports.length, topEntity]);
+  }, [manifest, ports.length, project.sources]);
   const visibleProblems = useMemo(
     () => Array.from(new Set([...localProjectProblems, ...mappingProblems, ...analysisProblems, ...runtimeProblems])),
     [analysisProblems, localProjectProblems, mappingProblems, runtimeProblems]
@@ -197,25 +179,26 @@ export default function App() {
     lastAdvanceWallMsRef.current = wallNowMs;
   }, []);
 
-  useEffect(() => { localStorage.setItem("logicboard.source.v3", source); }, [source]);
-  useEffect(() => { localStorage.setItem("logicboard.assignments.v4", JSON.stringify(assignments)); }, [assignments]);
   useEffect(() => { localStorage.setItem("logicboard.paneSizes", JSON.stringify(paneSizes)); }, [paneSizes]);
   useEffect(() => { localStorage.setItem("logicboard.collapsedPanes.v2", JSON.stringify(collapsed)); }, [collapsed]);
+  useEffect(() => {
+    void listTemplates().then(setProjectTemplates).catch((error) => setRuntimeProblems([String(error)]));
+  }, []);
   useEffect(() => { setProblems(visibleProblems); }, [visibleProblems]);
-  useEffect(() => { setRuntimeProblems([]); }, [assignments, source]);
+  useEffect(() => { setRuntimeProblems([]); }, [assignments, sourceStateKey]);
   useEffect(() => {
     const revision = ++analysisRevisionRef.current;
     setAnalysisProblems([]);
-    if (lastAnalyzedSourceRef.current === source || localProjectProblems.length) return;
+    if (lastAnalyzedSourceRef.current === sourceStateKey || localProjectProblems.length) return;
 
     const timer = window.setTimeout(async () => {
-      if (lastAnalyzedSourceRef.current === source) return;
-      lastAnalyzedSourceRef.current = source;
+      if (lastAnalyzedSourceRef.current === sourceStateKey) return;
+      lastAnalyzedSourceRef.current = sourceStateKey;
       if (!isTauriApp()) return;
 
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        const result = await invoke<string[]>("analyze_project", { sources: [{ name: "board_demo.vhd", content: source }] });
+        const result = await invoke<string[]>("analyze_project", { sources: sourcePayloads });
         if (analysisRevisionRef.current === revision) setAnalysisProblems(result);
       } catch (error) {
         if (analysisRevisionRef.current === revision) setAnalysisProblems([String(error)]);
@@ -223,7 +206,7 @@ export default function App() {
     }, 650);
 
     return () => window.clearTimeout(timer);
-  }, [localProjectProblems, source]);
+  }, [localProjectProblems, sourcePayloads, sourceStateKey]);
   useEffect(() => {
     if (simState !== "running") return;
     if (isTauriApp() && simulationClocks.length) return;
@@ -267,6 +250,124 @@ export default function App() {
     initialInputPortValuesRef.current = {};
     setSimPace(1);
   };
+
+  const reportProjectError = (error: unknown) => {
+    setRuntimeProblems([String(error)]);
+    setBottomTab("problems");
+  };
+
+  const replaceProject = (loaded: LoadedProject) => {
+    reset();
+    load(loaded);
+    setProjectDialog(null);
+    setProjectMenuOpen(false);
+    setAnalysisProblems([]);
+    setRuntimeProblems([]);
+    setCompilationLog([]);
+  };
+
+  const persistProject = async (saveAs = false) => {
+    if (!isDesktopApp()) {
+      reportProjectError("Project folders are available only in the Tauri desktop application.");
+      return false;
+    }
+    setProjectBusy(true);
+    try {
+      const payload = { manifest, sources: project.sources };
+      const loaded = project.rootPath && !saveAs
+        ? await saveProject(project.rootPath, payload)
+        : await (async () => {
+          const parentPath = await chooseProjectFolder();
+          if (!parentPath) return null;
+          return saveProjectAs(parentPath, projectFolderName(manifest.name), payload);
+        })();
+      if (!loaded) return false;
+      markSaved(loaded);
+      setRuntimeProblems([]);
+      return true;
+    } catch (error) {
+      reportProjectError(error);
+      return false;
+    } finally {
+      setProjectBusy(false);
+    }
+  };
+
+  const runProjectAction = (action: () => Promise<void>) => {
+    setProjectMenuOpen(false);
+    if (projectDirty) {
+      pendingProjectActionRef.current = action;
+      setUnsavedOpen(true);
+    } else {
+      void action();
+    }
+  };
+
+  const openExistingProject = () => runProjectAction(async () => {
+    setProjectBusy(true);
+    try {
+      const projectPath = await chooseProjectFolder();
+      if (!projectPath) return;
+      replaceProject(await openProject(projectPath));
+    } catch (error) {
+      reportProjectError(error);
+    } finally {
+      setProjectBusy(false);
+    }
+  });
+
+  const createNewProject = (name: string, folderName: string, templateId: string) => {
+    setProjectDialog(null);
+    runProjectAction(async () => {
+    setProjectBusy(true);
+    try {
+      const parentPath = await chooseProjectFolder();
+      if (!parentPath) return;
+      replaceProject(await createProject(parentPath, folderName, templateId, name));
+    } catch (error) {
+      reportProjectError(error);
+    } finally {
+      setProjectBusy(false);
+    }
+    });
+  };
+
+  const continuePendingAction = async (saveFirst: boolean) => {
+    const action = pendingProjectActionRef.current;
+    if (!action) return;
+    if (saveFirst && !(await persistProject())) return;
+    pendingProjectActionRef.current = null;
+    setUnsavedOpen(false);
+    await action();
+  };
+
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        void persistProject();
+      }
+    };
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  });
+
+  useEffect(() => {
+    if (!isDesktopApp()) return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void import("@tauri-apps/api/window").then(async ({ getCurrentWindow }) => {
+      const currentWindow = getCurrentWindow();
+      const cleanup = await currentWindow.onCloseRequested((event) => {
+        if (!projectDirty) return;
+        event.preventDefault();
+        pendingProjectActionRef.current = async () => { await currentWindow.destroy(); };
+        setUnsavedOpen(true);
+      });
+      if (disposed) cleanup(); else unlisten = cleanup;
+    });
+    return () => { disposed = true; unlisten?.(); };
+  }, [projectDirty]);
 
   const assign = (assignment: Assignment) => {
     setAssignments((old) => applyAssignment(old, assignment));
@@ -356,7 +457,7 @@ export default function App() {
         return true;
       }
       const { invoke } = await import("@tauri-apps/api/core");
-      const result = await invoke<string[]>("analyze_project", { sources: [{ name: "board_demo.vhd", content: source }] });
+      const result = await invoke<string[]>("analyze_project", { sources: sourcePayloads });
       setCompilationLog([...(result.length ? result : ["GHDL analysis completed successfully."]), ...mappingProblems.map((item) => `Mapping warning: ${item}`)]);
       return true;
     } catch (error) {
@@ -367,7 +468,7 @@ export default function App() {
     } finally {
       setIsCompiling(false);
     }
-  }, [mappingProblems, source, validateProject]);
+  }, [mappingProblems, sourcePayloads, validateProject]);
 
   const stopSimulation = useCallback(() => {
     void stopActiveSimulationSession();
@@ -404,7 +505,7 @@ export default function App() {
       const previousTimeNs = simulatedTimeNsRef.current;
       const durationNs = initialSimulationWarmupNs;
       const started = await invoke<SimulationSessionResult>("start_simulation_session", {
-        sources: [{ name: "board_demo.vhd", content: source }],
+        sources: sourcePayloads,
         topEntity,
         ports,
         inputs: initialInputPortValuesRef.current,
@@ -439,7 +540,7 @@ export default function App() {
       setBottomTab("problems");
       setSimState("stopped");
     } finally { setIsSimulating(false); }
-  }, [appendSimulationSamples, appendWaveSample, compileProject, inputPortValues, ports, recordPace, simulationClocks, source, stopActiveSimulationSession, topEntity]);
+  }, [appendSimulationSamples, appendWaveSample, compileProject, inputPortValues, ports, recordPace, simulationClocks, source, sourcePayloads, stopActiveSimulationSession, topEntity]);
 
   const updateRunningSimulation = useCallback(async () => {
     if (simulationAdvanceInFlightRef.current) return;
@@ -485,7 +586,7 @@ export default function App() {
     } finally {
       simulationAdvanceInFlightRef.current = false;
     }
-  }, [appendSimulationSamples, appendWaveSample, currentSimulationTargetNs, inputPortValues, ports, recordPace, source, stopActiveSimulationSession]);
+  }, [appendSimulationSamples, appendWaveSample, currentSimulationTargetNs, inputPortValues, ports, recordPace, source, sourceStateKey, stopActiveSimulationSession]);
 
   const handleBoardContext = useCallback((target: MappingTarget, event: React.MouseEvent) => {
     event.preventDefault();
@@ -528,7 +629,7 @@ export default function App() {
     pendingInputEventsRef.current = [];
     initialInputPortValuesRef.current = {};
     setSimPace(1);
-  }, [source, assignments, stopActiveSimulationSession]);
+  }, [sourceStateKey, stopActiveSimulationSession]);
   useEffect(() => {
     if (previousInputsRef.current === inputs) return;
     previousInputsRef.current = inputs;
@@ -540,8 +641,17 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [simState, simulationClocks.length, speed, updateRunningSimulation]);
 
-  const activeContent = activeFile === "source" ? source : constraints;
-  const activeFileName = activeFile === "source" ? "board_demo.vhd" : "constraints.qsf";
+  const fileName = (path: string) => path.split("/").at(-1) ?? path;
+  const activeContent = activeIsConstraints ? constraints : activeSource?.content ?? "";
+  const activeFileName = activeIsConstraints ? constraintsPath : fileName(activeSource?.path ?? "No source");
+  const editorTabs = [
+    ...project.sources.map((item) => ({
+      path: item.path,
+      name: fileName(item.path),
+      modified: isProjectSourceDirty(project, item.path)
+    })),
+    { path: constraintsPath, name: constraintsPath, readOnly: true }
+  ];
   const workspaceStyle = {
     "--explorer-width": `${collapsed.explorer ? 34 : paneSizes.explorer}px`,
     "--editor-width": `${paneSizes.editor}px`,
@@ -559,14 +669,22 @@ export default function App() {
     ? `Interactive simulation uses ${clockNotice.simulation} board clocks.\nIf your VHDL uses hardware clock constants such as 50_000_000, adjust them for simulation, e.g. 1_000.\n${clockNotice.physical} · Sim clock: ${clockNotice.simulation} · ${paceLabel}`
     : "";
 
-  return <div className="app" onClick={() => context && setContext(null)}>
+  return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); }}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark"><Activity size={19} /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
-      <button className="project-button" disabled title="Project switching is not implemented yet"><FolderOpen size={16} /><div><small>PROJECT</small><b>board-demo</b></div><ChevronDown size={14} /></button>
+      <div className="project-control" onClick={(event) => event.stopPropagation()}>
+        <button className="project-button" disabled={projectBusy} onClick={() => setProjectMenuOpen((open) => !open)}><FolderOpen size={16} /><div><small>PROJECT</small><b>{manifest.name}{projectDirty ? " •" : ""}</b></div><ChevronDown size={14} /></button>
+        {projectMenuOpen && <ProjectMenu
+          onNew={() => { setProjectMenuOpen(false); setProjectDialog("new"); }}
+          onOpen={() => { setProjectMenuOpen(false); void openExistingProject(); }}
+          onSaveAs={() => { setProjectMenuOpen(false); void persistProject(true); }}
+          onSettings={() => { setProjectMenuOpen(false); setProjectDialog("settings"); }}
+        />}
+      </div>
       <div className="top-spacer" />
       <div className={`status ${isCompiling ? "compiling" : simState}`}><i />{statusLabel}</div>
-      <button className="icon-button" disabled title="Save is not implemented yet"><Save size={17} /></button>
-      <button className="icon-button" disabled title="Settings are not implemented yet"><Settings2 size={17} /></button>
+      <button className="icon-button" disabled={!projectDirty || projectBusy} title="Save project (Ctrl+S)" onClick={() => void persistProject()}><Save size={17} /></button>
+      <button className="icon-button" disabled={projectBusy} title="Project settings" onClick={() => setProjectDialog("settings")}><Settings2 size={17} /></button>
     </header>
 
     <div className="toolbar">
@@ -577,7 +695,7 @@ export default function App() {
           <select
             value={selectedBoardId}
             onChange={(event) => {
-              setSelectedBoardId(event.target.value);
+              setBoardId(event.target.value);
               reset();
             }}
             title={boards.length === 1 ? "Only EP2C20F484C7 is available right now" : "Changing boards resets the simulation"}
@@ -603,25 +721,22 @@ export default function App() {
       <aside className="files-panel">
         {collapsed.explorer ? <button className="panel-rail compact" title="Expand explorer" onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
           <div className="panel-heading"><span>EXPLORER</span><button className="collapse-button" title="Collapse explorer" onClick={() => togglePane("explorer")}>‹</button></div>
-          <div className="tree-root"><ChevronDown size={14} /><b>BOARD-DEMO</b></div>
-          <button className={`tree-file ${activeFile === "source" ? "active" : ""}`} onClick={() => setActiveFile("source")}><FileCode2 size={15} /><span>board_demo.vhd</span><i>M</i></button>
-          <button className={`tree-file ${activeFile === "constraints" ? "active" : ""}`} onClick={() => setActiveFile("constraints")}><FileCode2 size={15} /><span>constraints.qsf</span><em>generated</em></button>
-          <div className="files-footer"><div><span>TOP ENTITY</span><strong>{topEntity ?? "not found"}</strong></div></div>
+          <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
+          {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
+          <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>generated</em></button>
+          <div className="files-footer"><div><span>TOP ENTITY</span><strong>{topEntity}</strong></div></div>
         </>}
       </aside>
       <div className="resize-handle vertical explorer-handle" title="Drag to resize explorer. Double-click to reset." onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />
 
       <EditorPanel
-        tabs={[
-          { path: "source", name: "board_demo.vhd", modified: true },
-          { path: "constraints", name: "constraints.qsf", readOnly: true }
-        ]}
-        activePath={activeFile}
+        tabs={editorTabs}
+        activePath={project.activePath}
         activeFileName={activeFileName}
         activeContent={activeContent}
-        readOnly={activeFile === "constraints"}
-        onSelect={(path) => setActiveFile(path as ActiveFile)}
-        onChange={setSource}
+        readOnly={activeIsConstraints}
+        onSelect={setActivePath}
+        onChange={updateActiveContent}
       />
       <div className="resize-handle vertical editor-handle" title="Drag to resize editor. Double-click to reset." onPointerDown={(event) => startResize("editor", event)} onDoubleClick={() => resetPane("editor")} />
 
@@ -679,6 +794,27 @@ export default function App() {
       onSearch={setSignalSearch}
       onAssign={assign}
       onClear={clearAssignment}
+    />}
+    {projectDialog === "new" && <NewProjectDialog
+      templates={projectTemplates}
+      onCancel={() => setProjectDialog(null)}
+      onOpen={() => { setProjectDialog(null); void openExistingProject(); }}
+      onCreate={(name, folderName, templateId) => void createNewProject(name, folderName, templateId)}
+    />}
+    {projectDialog === "settings" && <ProjectSettingsDialog
+      name={manifest.name}
+      boardId={manifest.boardId}
+      topEntity={manifest.topEntity}
+      boards={boards}
+      entityNames={entityNames}
+      onCancel={() => setProjectDialog(null)}
+      onSave={(settings) => { setManifest(settings); reset(); setProjectDialog(null); }}
+    />}
+    {unsavedOpen && <UnsavedChangesDialog
+      projectName={manifest.name}
+      onSave={() => void continuePendingAction(true)}
+      onDiscard={() => void continuePendingAction(false)}
+      onCancel={() => { pendingProjectActionRef.current = null; setUnsavedOpen(false); }}
     />}
   </div>;
 }

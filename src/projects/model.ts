@@ -78,6 +78,18 @@ export function isProjectDirty(project: ProjectState) {
   return project.savedSnapshot !== projectSnapshot(project.manifest, project.sources);
 }
 
+export function isProjectSourceDirty(project: ProjectState, path: string) {
+  if (!project.savedSnapshot) return true;
+  try {
+    const saved = JSON.parse(project.savedSnapshot) as { sources?: ProjectSource[] };
+    const previous = saved.sources?.find((source) => source.path === path);
+    const current = project.sources.find((source) => source.path === path);
+    return previous?.content !== current?.content;
+  } catch {
+    return true;
+  }
+}
+
 export function loadedProjectState(project: LoadedProject): ProjectState {
   const snapshot = projectSnapshot(project.manifest, project.sources);
   return {
