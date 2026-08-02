@@ -9,6 +9,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+mod projects;
+use projects::{create_project, list_project_templates, open_project, save_project, save_project_as};
+
 const MAX_SESSION_STEP_NS: u64 = 250_000_000;
 
 #[derive(Deserialize)]
@@ -84,15 +87,16 @@ struct SimulationSession {
     simulated_time_ns: u64,
 }
 
-fn safe_filename(name: &str) -> Option<&str> {
+fn safe_source_path(name: &str) -> Option<PathBuf> {
     let path = Path::new(name);
-    if path.components().count() == 1
+    if !path.is_absolute()
+        && path.components().all(|component| matches!(component, std::path::Component::Normal(_)))
         && matches!(
             path.extension().and_then(|v| v.to_str()),
-            Some("vhd" | "vhdl")
+            Some(extension) if extension.eq_ignore_ascii_case("vhd") || extension.eq_ignore_ascii_case("vhdl")
         )
     {
-        path.file_name()?.to_str()
+        Some(path.to_path_buf())
     } else {
         None
     }
@@ -495,15 +499,7 @@ fn analyze_project(sources: Vec<VhdlSource>) -> Result<Vec<String>, String> {
     fs::create_dir_all(&work).map_err(|e| format!("Could not create GHDL work directory: {e}"))?;
 
     let result = (|| {
-        let mut files = Vec::with_capacity(sources.len());
-        for source in sources {
-            let filename = safe_filename(&source.name)
-                .ok_or_else(|| format!("Invalid VHDL filename: {}", source.name))?;
-            let path = work.join(filename);
-            fs::write(&path, source.content)
-                .map_err(|e| format!("Could not stage {filename}: {e}"))?;
-            files.push(path);
-        }
+        let files = stage_sources(&work, sources)?;
         let args: Vec<String> = std::iter::once("-a".to_owned())
             .chain(std::iter::once("--std=08".to_owned()))
             .chain(files.iter().map(|path| path.to_string_lossy().to_string()))
@@ -539,15 +535,7 @@ fn simulate_project(
     fs::create_dir_all(&work).map_err(|e| format!("Could not create GHDL work directory: {e}"))?;
 
     let result = (|| {
-        let mut files = Vec::with_capacity(sources.len());
-        for source in sources {
-            let filename = safe_filename(&source.name)
-                .ok_or_else(|| format!("Invalid VHDL filename: {}", source.name))?;
-            let path = work.join(filename);
-            fs::write(&path, source.content)
-                .map_err(|e| format!("Could not stage {filename}: {e}"))?;
-            files.push(path);
-        }
+        let mut files = stage_sources(&work, sources)?;
         let tb_path = work.join("logicboard_tb.vhd");
         let bounded_duration_ns = duration_ns.max(1);
         let bounded_sample_interval_ns = sample_interval_ns
@@ -608,11 +596,14 @@ fn simulate_project(
 fn stage_sources(work: &Path, sources: Vec<VhdlSource>) -> Result<Vec<PathBuf>, String> {
     let mut files = Vec::with_capacity(sources.len());
     for source in sources {
-        let filename = safe_filename(&source.name)
-            .ok_or_else(|| format!("Invalid VHDL filename: {}", source.name))?;
-        let path = work.join(filename);
+        let relative = safe_source_path(&source.name)
+            .ok_or_else(|| format!("Invalid VHDL source path: {}", source.name))?;
+        let path = work.join(&relative);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("Could not create staging folder {}: {e}", parent.display()))?;
+        }
         fs::write(&path, source.content)
-            .map_err(|e| format!("Could not stage {filename}: {e}"))?;
+            .map_err(|e| format!("Could not stage {}: {e}", relative.display()))?;
         files.push(path);
     }
     Ok(files)
@@ -912,7 +903,12 @@ pub fn run() {
             simulate_project,
             start_simulation_session,
             step_simulation_session,
-            stop_simulation_session
+            stop_simulation_session,
+            list_project_templates,
+            open_project,
+            create_project,
+            save_project,
+            save_project_as
         ])
         .run(tauri::generate_context!())
         .expect("error while running LogicBoard Studio");
@@ -921,7 +917,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::{
-        collect_samples, interactive_testbench_source, report_value, safe_filename,
+        collect_samples, interactive_testbench_source, report_value, safe_source_path,
         simulate_project, start_simulation_session_inner, step_simulation_session_inner,
         stop_simulation_session_inner, testbench_source, InputEvent, SimulationClock,
         SimulationSessions, VhdlPort, VhdlSource,
@@ -931,11 +927,13 @@ mod tests {
 
     #[test]
     fn accepts_vhdl_files() {
-        assert_eq!(safe_filename("top.vhd"), Some("top.vhd"));
+        assert_eq!(safe_source_path("top.vhd"), Some(std::path::PathBuf::from("top.vhd")));
+        assert_eq!(safe_source_path("src/pkg/top.vhdl"), Some(std::path::PathBuf::from("src/pkg/top.vhdl")));
     }
     #[test]
     fn rejects_paths() {
-        assert_eq!(safe_filename("../top.vhd"), None);
+        assert_eq!(safe_source_path("../top.vhd"), None);
+        assert_eq!(safe_source_path("top.txt"), None);
     }
     #[test]
     fn parses_reported_values() {
