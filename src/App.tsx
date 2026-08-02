@@ -22,7 +22,7 @@ import {
 import type { SimulationClockConfig } from "./simulation";
 import type { Assignment, BoardEndpoint, EntityPort, MappingMode, MappingTarget, WaveSample } from "./types";
 import { parseEntityPorts, previewOutputs } from "./vhdl";
-import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, saveProject, saveProjectAs } from "./projects/api";
+import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, saveProject, saveProjectAs, showProjectError } from "./projects/api";
 import { useProjectWorkspace } from "./projects/useProjectWorkspace";
 import { validateProjectManifest } from "./projects/model";
 import { isProjectSourceDirty, shouldContinueProjectAction } from "./projects/model";
@@ -182,6 +182,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem("logicboard.paneSizes", JSON.stringify(paneSizes)); }, [paneSizes]);
   useEffect(() => { localStorage.setItem("logicboard.collapsedPanes.v2", JSON.stringify(collapsed)); }, [collapsed]);
   useEffect(() => {
+    if (!isDesktopApp()) return;
     void listTemplates().then(setProjectTemplates).catch((error) => setRuntimeProblems([String(error)]));
   }, []);
   useEffect(() => { setProblems(visibleProblems); }, [visibleProblems]);
@@ -254,6 +255,7 @@ export default function App() {
   const reportProjectError = (error: unknown) => {
     setRuntimeProblems([String(error)]);
     setBottomTab("problems");
+    void showProjectError(error);
   };
 
   const replaceProject = (loaded: LoadedProject) => {

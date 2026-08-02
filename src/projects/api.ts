@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { message, open } from "@tauri-apps/plugin-dialog";
 import type { LoadedProject, ProjectManifest, ProjectSource, ProjectTemplate } from "./model";
 
 export const isDesktopApp = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -12,6 +12,11 @@ export async function chooseProjectFolder() {
   requireDesktop();
   const selected = await open({ directory: true, multiple: false });
   return typeof selected === "string" ? selected : null;
+}
+
+export async function showProjectError(error: unknown) {
+  if (!isDesktopApp()) return;
+  await message(String(error), { title: "LogicBoard project error", kind: "error" });
 }
 
 export async function listTemplates() {
