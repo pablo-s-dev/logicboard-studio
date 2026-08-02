@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-02
+
 ### Added
 
 - Added an implementation roadmap covering viewport-safe tooltips, native project folders, multi-file editing, project templates, hardening, acceptance criteria, and granular Conventional Commit boundaries.
@@ -19,12 +21,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added one-time recovery of legacy source and assignment data as an unsaved `Recovered board-demo` project; migrated keys are removed only after a successful save.
 - Added immutable blank, LED/switch mirror, button/seven-segment, and four-digit timer starter projects with manifests, mappings, commented VHDL, and READMEs.
 - Added frontend and Rust coverage for dirty state, legacy recovery, ordered source payloads, native API failures, validation, traversal and symlink rejection, transactional rollback, persistence, and template independence.
+- Added global application settings with a persistent Portuguese/English language selector.
+- Added Brazilian Portuguese translations for the simulator, project workflows, editor, board, inspector, mapper, waveform, compilation messages, tooltips, and native project errors.
+- Added localization tests for the default language, saved English preference, and translated value interpolation.
 
 ### Changed
 
 - Changed VHDL analysis and simulation to stage every source using its validated relative path and manifest order.
 - Changed the editor Explorer and tab strip to render all project sources followed by read-only generated `constraints.qsf`.
 - Changed board and top-entity settings, assignments, diagnostics, inputs, and waveform state to follow the active project lifecycle.
+- Changed the default interface language to Brazilian Portuguese while retaining English as an option.
 
 ### Security
 
