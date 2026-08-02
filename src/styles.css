@@ -40,6 +40,13 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .project-button div { display: flex; flex-direction: column; flex: 1; }
 .project-button small, .toolbar small { color: #6d7a84; font-size: 8px; letter-spacing: 1px; }
 .project-button b { font-size: 11px; font-weight: 500; }
+.project-control { position: relative; }
+.project-menu { position: absolute; z-index: 50; top: 40px; left: 0; width: 260px; padding: 5px; border: 1px solid #344149; border-radius: 7px; background: #151c20; box-shadow: 0 18px 45px #000b; }
+.project-menu button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 7px 9px; border: 0; border-radius: 5px; background: transparent; color: #aab8be; text-align: left; }
+.project-menu button:hover { background: #202a2f; color: #d9f6f7; }
+.project-menu button > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.project-menu b { font-size: 9px; }
+.project-menu small { color: #687780; font-size: 8px; }
 .top-spacer, .toolbar-spacer { flex: 1; }
 .status { text-transform: capitalize; font-size: 11px; color: #92a0a9; display: flex; gap: 7px; align-items: center; margin-right: 4px; }
 .status i { width: 7px; height: 7px; border-radius: 50%; background: #51cba2; box-shadow: 0 0 8px #51cba277; }
@@ -348,6 +355,32 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .context-options p { color: #65747d; text-align: center; font-size: 9px; padding: 12px; }
 .clear-assignment { width: 100%; height: 32px; border: 0; border-top: 1px solid #2a3339; background: #161b1f; color: #c57c75; font-size: 8px; display: flex; align-items: center; gap: 7px; padding: 0 11px; }
 
+.modal-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: #020507c9; backdrop-filter: blur(3px); }
+.project-modal { width: min(650px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: hidden; border: 1px solid #34454e; border-radius: 10px; background: #11181c; box-shadow: 0 24px 80px #000d; }
+.project-modal > header { min-height: 65px; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #293239; background: #172025; }
+.project-modal > header small { color: var(--cyan); font: 7px "IBM Plex Mono", monospace; letter-spacing: 1.3px; }
+.project-modal h2 { margin: 4px 0 0; color: #d6e2e6; font-size: 16px; }
+.project-modal > header button { width: 30px; height: 30px; border: 0; border-radius: 5px; background: transparent; color: #7c8b93; font-size: 22px; }
+.project-modal > header button:hover { background: #253037; color: #d8e8eb; }
+.modal-body { max-height: calc(100vh - 115px); overflow: auto; padding: 18px; }
+.project-field { display: grid; gap: 6px; margin-bottom: 13px; color: #7e8d95; font-size: 8px; letter-spacing: .5px; text-transform: uppercase; }
+.project-field input, .project-field select { width: 100%; height: 36px; border: 1px solid #2b3940; border-radius: 5px; outline: 0; background: #0b1114; color: #cad6da; padding: 0 10px; font: 10px "IBM Plex Mono", monospace; text-transform: none; }
+.project-field input:focus, .project-field select:focus { border-color: #46cbd2; box-shadow: 0 0 0 2px #39d0d81f; }
+.template-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 17px 0; }
+.template-grid button { min-height: 76px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 11px; border: 1px solid #29353c; border-radius: 6px; background: #0e1518; color: #aebbc0; text-align: left; }
+.template-grid button:hover { border-color: #477078; background: #142025; }
+.template-grid button.active { border-color: var(--cyan); background: #14252a; box-shadow: inset 0 0 0 1px #39d0d833; }
+.template-grid b { font-size: 10px; }
+.template-grid span { color: #6f7f87; font-size: 8px; line-height: 13px; }
+.modal-copy { margin: 4px 0 20px; color: #a5b3b9; font-size: 10px; line-height: 17px; }
+.modal-actions { display: flex; align-items: center; gap: 8px; padding-top: 8px; }
+.modal-actions > span { flex: 1; }
+.modal-actions button { min-height: 32px; border: 1px solid #344149; border-radius: 5px; padding: 0 13px; background: #172025; color: #b9c7cc; font-size: 9px; }
+.modal-actions button:hover { border-color: #5d7079; background: #202a30; }
+.modal-actions button.primary { border-color: #42cbd2; background: #2aaeb6; color: #061012; font-weight: 700; }
+.modal-actions button.danger { border-color: #6b3d3d; color: #df9292; }
+.modal-actions button:disabled { opacity: .45; }
+
 @keyframes pulse { 50% { box-shadow: 0 0 14px #39d0d8; } }
 @media (max-width: 1300px) {
   .workspace { grid-template-columns: var(--explorer-width) 5px minmax(280px, var(--editor-width)) 5px minmax(410px, 1fr) 5px var(--inspector-width); }
@@ -376,4 +409,5 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   .board-canvas, .board-grid { min-width: 0; }
   .bottom-tabs { overflow-x: auto; }
   .waveform { --wave-label-width: 136px; }
+  .template-grid { grid-template-columns: 1fr; }
 }
