@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { BoardDefinition } from "../../types";
 import type { ProjectTemplate } from "../../projects/model";
 import { projectFolderName } from "../../projects/api";
+import { useI18n } from "../../i18n";
 
 export function ProjectMenu({ onNew, onOpen, onSaveAs, onSettings }: {
   onNew: () => void;
@@ -10,11 +11,12 @@ export function ProjectMenu({ onNew, onOpen, onSaveAs, onSettings }: {
   onSaveAs: () => void;
   onSettings: () => void;
 }) {
+  const { t } = useI18n();
   return <div className="project-menu" onClick={(event) => event.stopPropagation()}>
-    <button onClick={onNew}><FolderPlus size={14} /><span><b>New Project</b><small>Blank or from a template</small></span></button>
-    <button onClick={onOpen}><FolderOpen size={14} /><span><b>Open Project</b><small>Select a project folder</small></span></button>
-    <button onClick={onSaveAs}><Save size={14} /><span><b>Save As</b><small>Create an independent project folder</small></span></button>
-    <button onClick={onSettings}><Settings2 size={14} /><span><b>Project Settings</b><small>Name, board, and top entity</small></span></button>
+    <button onClick={onNew}><FolderPlus size={14} /><span><b>{t("project.new")}</b><small>{t("project.new.help")}</small></span></button>
+    <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t("project.open.help")}</small></span></button>
+    <button onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t("project.saveAs.help")}</small></span></button>
+    <button onClick={onSettings}><Settings2 size={14} /><span><b>{t("project.settings")}</b><small>{t("project.settings.help")}</small></span></button>
   </div>;
 }
 
@@ -31,8 +33,9 @@ export function NewProjectDialog({ templates, onCancel, onOpen, onCreate }: {
   onOpen: () => void;
   onCreate: (name: string, folderName: string, templateId: string) => void;
 }) {
+  const { t } = useI18n();
   const available = templates.length ? templates : fallbackTemplates;
-  const [name, setName] = useState("My LogicBoard Project");
+  const [name, setName] = useState("Meu projeto LogicBoard");
   const [folderName, setFolderName] = useState(projectFolderName(name));
   const [templateId, setTemplateId] = useState(available[0].id);
   const [folderEdited, setFolderEdited] = useState(false);
@@ -41,15 +44,15 @@ export function NewProjectDialog({ templates, onCancel, onOpen, onCreate }: {
     if (!folderEdited) setFolderName(projectFolderName(name));
   }, [folderEdited, name]);
 
-  return <Modal title="New LogicBoard Project" onCancel={onCancel}>
-    <label className="project-field">Project name<input autoFocus value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
-    <label className="project-field">Folder name<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
+  return <Modal title={t("project.new.title")} onCancel={onCancel}>
+    <label className="project-field">{t("project.name")}<input autoFocus value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
+    <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
     <div className="template-grid">
       {available.map((template) => <button key={template.id} className={templateId === template.id ? "active" : ""} onClick={() => setTemplateId(template.id)}>
-        <b>{template.name}</b><span>{template.description}</span>
+        <b>{t(`template.${template.id}.name`)}</b><span>{t(`template.${template.id}.description`)}</span>
       </button>)}
     </div>
-    <div className="modal-actions"><button className="secondary" onClick={onOpen}>Open existing</button><span /><button className="secondary" onClick={onCancel}>Cancel</button><button className="primary" disabled={!name.trim() || !folderName.trim()} onClick={() => onCreate(name.trim(), folderName.trim(), templateId)}>Choose location…</button></div>
+    <div className="modal-actions"><button className="secondary" onClick={onOpen}>{t("project.openExisting")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim()} onClick={() => onCreate(name.trim(), folderName.trim(), templateId)}>{t("project.chooseLocation")}</button></div>
   </Modal>;
 }
 
@@ -62,14 +65,15 @@ export function ProjectSettingsDialog({ name, boardId, topEntity, boards, entity
   onCancel: () => void;
   onSave: (settings: { name: string; boardId: string; topEntity: string }) => void;
 }) {
+  const { t } = useI18n();
   const [nextName, setNextName] = useState(name);
   const [nextBoardId, setNextBoardId] = useState(boardId);
   const [nextTopEntity, setNextTopEntity] = useState(topEntity);
-  return <Modal title="Project Settings" onCancel={onCancel}>
-    <label className="project-field">Project name<input autoFocus value={nextName} maxLength={80} onChange={(event) => setNextName(event.target.value)} /></label>
-    <label className="project-field">Target board<select value={nextBoardId} onChange={(event) => setNextBoardId(event.target.value)}>{boards.map((board) => <option key={board.id} value={board.id}>{board.name} — {board.device}</option>)}</select></label>
-    <label className="project-field">Top entity<select value={nextTopEntity} onChange={(event) => setNextTopEntity(event.target.value)}>{entityNames.map((entity) => <option key={entity} value={entity}>{entity}</option>)}</select></label>
-    <div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>Cancel</button><button className="primary" disabled={!nextName.trim() || !nextTopEntity} onClick={() => onSave({ name: nextName.trim(), boardId: nextBoardId, topEntity: nextTopEntity })}>Apply</button></div>
+  return <Modal title={t("project.settings")} onCancel={onCancel}>
+    <label className="project-field">{t("project.name")}<input autoFocus value={nextName} maxLength={80} onChange={(event) => setNextName(event.target.value)} /></label>
+    <label className="project-field">{t("project.targetBoard")}<select value={nextBoardId} onChange={(event) => setNextBoardId(event.target.value)}>{boards.map((board) => <option key={board.id} value={board.id}>{t(`board.name.${board.id}`)} — {board.device}</option>)}</select></label>
+    <label className="project-field">{t("project.topEntity")}<select value={nextTopEntity} onChange={(event) => setNextTopEntity(event.target.value)}>{entityNames.map((entity) => <option key={entity} value={entity}>{entity}</option>)}</select></label>
+    <div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!nextName.trim() || !nextTopEntity} onClick={() => onSave({ name: nextName.trim(), boardId: nextBoardId, topEntity: nextTopEntity })}>{t("settings.apply")}</button></div>
   </Modal>;
 }
 
@@ -79,16 +83,18 @@ export function UnsavedChangesDialog({ projectName, onSave, onDiscard, onCancel 
   onDiscard: () => void;
   onCancel: () => void;
 }) {
-  return <Modal title="Unsaved changes" onCancel={onCancel}>
-    <p className="modal-copy">Save changes to <b>{projectName}</b> before continuing?</p>
-    <div className="modal-actions"><button className="danger" onClick={onDiscard}>Discard</button><span /><button className="secondary" onClick={onCancel}>Cancel</button><button className="primary" onClick={onSave}>Save</button></div>
+  const { t } = useI18n();
+  return <Modal title={t("project.unsaved.title")} onCancel={onCancel}>
+    <p className="modal-copy">{t("project.unsaved.question", { name: projectName })}</p>
+    <div className="modal-actions"><button className="danger" onClick={onDiscard}>{t("project.discard")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" onClick={onSave}>{t("common.save")}</button></div>
   </Modal>;
 }
 
 function Modal({ title, children, onCancel }: { title: string; children: React.ReactNode; onCancel: () => void }) {
+  const { t } = useI18n();
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
     <section className="project-modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
-      <header><div><small>LOGICBOARD STUDIO</small><h2>{title}</h2></div><button aria-label="Close dialog" onClick={onCancel}>×</button></header>
+      <header><div><small>LOGICBOARD STUDIO</small><h2>{title}</h2></div><button aria-label={t("common.close")} onClick={onCancel}>×</button></header>
       <div className="modal-body">{children}</div>
     </section>
   </div>;

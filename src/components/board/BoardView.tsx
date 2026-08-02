@@ -4,6 +4,7 @@ import { Cpu } from "lucide-react";
 import { endpointSort, groupSort } from "../../board";
 import { assignmentStatus } from "../../assignments/model";
 import type { BoardDefinition, BoardEndpoint, BoardGroup, ExpandedAssignment, MappingTarget } from "../../types";
+import { useI18n } from "../../i18n";
 
 type BoardViewProps = {
   board: BoardDefinition;
@@ -14,19 +15,11 @@ type BoardViewProps = {
   onInput: (endpoint: BoardEndpoint, next: boolean) => void;
 };
 
-const mappingTooltipText = "Clique com o botão direito para definir a porta deste pino";
-const inputTooltipText = "Clique com o botão esquerdo para interagir com este controle.";
 type TooltipState = { text: string; x: number; y: number } | null;
 type TooltipHandlers = {
   onMouseEnter: (event: React.MouseEvent) => void;
   onMouseMove: (event: React.MouseEvent) => void;
   onMouseLeave: () => void;
-};
-
-const endpointTooltip = (endpoint: BoardEndpoint, assignment?: ExpandedAssignment) => {
-  const physicalPin = endpoint.pin ? `PIN_${endpoint.pin}` : "pino físico ainda não cadastrado";
-  if (assignment) return `${endpoint.label} -> ${assignment.portId} (${physicalPin}). ${mappingTooltipText}.`;
-  return `${endpoint.label} ainda sem porta mapeada (${physicalPin}). ${mappingTooltipText}.`;
 };
 
 const tooltipHandlers = (text: string, setTooltip: (tooltip: TooltipState) => void): TooltipHandlers => ({
@@ -42,12 +35,13 @@ const tooltipHandlers = (text: string, setTooltip: (tooltip: TooltipState) => vo
 });
 
 export const BoardView = memo(function BoardView({ board, expandedAssignments, assignmentEnabled, value, onContext, onInput }: BoardViewProps) {
+  const { t } = useI18n();
   const [tooltip, setTooltip] = useState<TooltipState>(null);
   const assignmentByEndpoint = new Map(expandedAssignments.map((assignment) => [assignment.endpointId, assignment]));
   const assignedEndpointIds = new Set(assignmentByEndpoint.keys());
   return <div className={`board-shell ${assignmentEnabled ? "" : "simulation-running"}`}>
     <div className="board-canvas">
-      <div className="schematic-header"><div><b>{board.device}</b><span>Functional board schematic</span></div><Cpu size={36} /></div>
+      <div className="schematic-header"><div><b>{board.device}</b><span>{t("board.schematic")}</span></div><Cpu size={36} /></div>
       <div className="board-grid">
         {[...board.groups].sort(groupSort).map((group) => <DeviceGroup
           key={group.id}
@@ -78,6 +72,7 @@ function DeviceGroup({ group, status, assignedEndpointIds, assignmentByEndpoint,
   onContext: (target: MappingTarget, event: React.MouseEvent) => void;
   onInput: (endpoint: BoardEndpoint, next: boolean) => void;
 }) {
+  const { t } = useI18n();
   const vectorContext = (event: React.MouseEvent) => {
     if (!assignmentEnabled) {
       event.preventDefault();
@@ -90,11 +85,11 @@ function DeviceGroup({ group, status, assignedEndpointIds, assignmentByEndpoint,
       onContext({ mode: "vector", endpointId: group.id }, event);
     }
   };
-  const vectorTooltip = assignmentEnabled && group.vectorName ? "Clique com o botão direito para mapear o vetor inteiro" : null;
+  const vectorTooltip = assignmentEnabled && group.vectorName ? t("board.mapVector") : null;
   return <section className={`board-section ${group.kind} ${status}`} onContextMenu={vectorContext} {...(vectorTooltip ? tooltipHandlers(vectorTooltip, setTooltip) : {})}>
     <h3>
       <button type="button" className="group-vector-target" onContextMenu={vectorContext} {...(vectorTooltip ? tooltipHandlers(vectorTooltip, setTooltip) : {})}>
-        {group.label}
+        {t(`board.group.${group.id}`)}
       </button>
     </h3>
     <div className={group.kind === "seven-segment" ? "display-row" : "device-row"} data-count={group.children.length}>
@@ -125,9 +120,15 @@ function BoardDevice({ endpoint, mapped, assignment, on, assignmentEnabled, setT
   onContext: (target: MappingTarget, event: React.MouseEvent) => void;
   onInput: (endpoint: BoardEndpoint, next: boolean) => void;
 }) {
+  const { t } = useI18n();
   const isInteractiveInput = endpoint.direction === "in" && (endpoint.kind === "switch" || endpoint.kind === "button");
-  const runningTooltip = isInteractiveInput ? inputTooltipText : null;
-  const tooltip = assignmentEnabled ? endpointTooltip(endpoint, assignment) : runningTooltip;
+  const runningTooltip = isInteractiveInput ? t("board.interact") : null;
+  const physicalPin = endpoint.pin ? `PIN_${endpoint.pin}` : t("board.pinUnknown");
+  const tooltip = assignmentEnabled
+    ? assignment
+      ? t("board.mapped", { label: endpoint.label, port: assignment.portId, pin: physicalPin, instruction: t("board.mapPin") })
+      : t("board.unmapped", { label: endpoint.label, pin: physicalPin, instruction: t("board.mapPin") })
+    : runningTooltip;
   const common = {
     onContextMenu: (event: React.MouseEvent) => {
       event.preventDefault();
@@ -171,8 +172,9 @@ function SevenSegmentGroup({ group, status, assignmentByEndpoint, assignmentEnab
   value: (endpoint: BoardEndpoint) => boolean;
   onContext: (target: MappingTarget, event: React.MouseEvent) => void;
 }) {
+  const { t } = useI18n();
   const active = group.children.some((endpoint) => value(endpoint));
-  const displayTooltip = assignmentEnabled ? "Clique com o botão direito para mapear o vetor inteiro" : null;
+  const displayTooltip = assignmentEnabled ? t("board.mapVector") : null;
   return <div
     className={`seven-display ${status} ${active ? "on" : ""} ${assignmentEnabled ? "" : "readonly-output"}`}
     role="button"
@@ -189,7 +191,9 @@ function SevenSegmentGroup({ group, status, assignmentByEndpoint, assignmentEnab
       {[...group.children].sort(endpointSort).map((endpoint) => <span
         key={endpoint.id}
         className={`seg ${endpoint.segment ?? ""} ${value(endpoint) ? "on" : ""}`}
-        {...(assignmentEnabled ? tooltipHandlers(endpointTooltip(endpoint, assignmentByEndpoint.get(endpoint.id)), setTooltip) : {})}
+        {...(assignmentEnabled ? tooltipHandlers(assignmentByEndpoint.get(endpoint.id)
+          ? t("board.mapped", { label: endpoint.label, port: assignmentByEndpoint.get(endpoint.id)!.portId, pin: endpoint.pin ? `PIN_${endpoint.pin}` : t("board.pinUnknown"), instruction: t("board.mapPin") })
+          : t("board.unmapped", { label: endpoint.label, pin: endpoint.pin ? `PIN_${endpoint.pin}` : t("board.pinUnknown"), instruction: t("board.mapPin") }), setTooltip) : {})}
         onContextMenu={(event) => {
           event.preventDefault();
           event.stopPropagation();

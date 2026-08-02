@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { FileCode2 } from "lucide-react";
+import { useI18n } from "../../i18n";
 
 type EditorPanelProps = {
   tabs: EditorTab[];
@@ -19,6 +20,7 @@ export type EditorTab = {
 };
 
 export function EditorPanel({ tabs, activePath, activeFileName, activeContent, readOnly, onSelect, onChange }: EditorPanelProps) {
+  const { t } = useI18n();
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,7 +43,7 @@ export function EditorPanel({ tabs, activePath, activeFileName, activeContent, r
       >
         <FileCode2 size={14} />
         <span className="editor-tab-name">{tab.name}</span>
-        {tab.readOnly ? <em>read-only</em> : tab.modified ? <i>modified</i> : null}
+        {tab.readOnly ? <em>{t("common.readOnly")}</em> : tab.modified ? <i>{t("common.modified")}</i> : null}
       </button>)}
     </div>
     <div className={`editor-wrap ${readOnly ? "read-only" : ""}`}>
@@ -57,7 +59,7 @@ export function EditorPanel({ tabs, activePath, activeFileName, activeContent, r
         readOnly={readOnly}
         onChange={(event) => !readOnly && onChange(event.target.value)}
         onScroll={(event) => syncLineNumbers(event.currentTarget.scrollTop)}
-        aria-label={readOnly ? "Generated constraints view" : "VHDL source editor"}
+        aria-label={readOnly ? t("editor.generatedView") : t("editor.source")}
       />
     </div>
   </section>;
