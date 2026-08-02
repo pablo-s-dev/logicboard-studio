@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "name": "LED and switch mirror",
+  "boardId": "ep2c20f484c7",
+  "topEntity": "led_switch_mirror",
+  "sources": ["src/led_switch_mirror.vhd"],
+  "assignments": [
+    { "id": "vector:SW:SW", "kind": "vector", "endpointId": "SW", "portId": "SW" },
+    { "id": "vector:LEDR:LEDR", "kind": "vector", "endpointId": "LEDR", "portId": "LEDR" }
+  ]
+}

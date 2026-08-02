@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "Buttons and seven-segment",
+  "boardId": "ep2c20f484c7",
+  "topEntity": "button_seven_segment",
+  "sources": ["src/button_seven_segment.vhd"],
+  "assignments": [
+    { "id": "vector:KEY:KEY", "kind": "vector", "endpointId": "KEY", "portId": "KEY" },
+    { "id": "vector:HEX0:HEX0", "kind": "vector", "endpointId": "HEX0", "portId": "HEX0" },
+    { "id": "vector:LEDG:LEDG", "kind": "vector", "endpointId": "LEDG", "portId": "LEDG" }
+  ]
+}

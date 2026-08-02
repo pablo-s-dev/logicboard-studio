@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "name": "Blank project",
+  "boardId": "ep2c20f484c7",
+  "topEntity": "logicboard_top",
+  "sources": ["src/logicboard_top.vhd"],
+  "assignments": []
+}

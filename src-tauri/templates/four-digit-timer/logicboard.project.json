@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "Four-digit timer",
+  "boardId": "ep2c20f484c7",
+  "topEntity": "timer_top",
+  "sources": ["src/timer_top.vhd"],
+  "assignments": [
+    { "id": "granular:CLOCK_50:CLOCK_50", "kind": "granular", "endpointId": "CLOCK_50", "portId": "CLOCK_50" },
+    { "id": "vector:KEY:KEY", "kind": "vector", "endpointId": "KEY", "portId": "KEY" },
+    { "id": "vector:HEX0:HEX0", "kind": "vector", "endpointId": "HEX0", "portId": "HEX0" },
+    { "id": "vector:HEX1:HEX1", "kind": "vector", "endpointId": "HEX1", "portId": "HEX1" },
+    { "id": "vector:HEX2:HEX2", "kind": "vector", "endpointId": "HEX2", "portId": "HEX2" },
+    { "id": "vector:HEX3:HEX3", "kind": "vector", "endpointId": "HEX3", "portId": "HEX3" },
+    { "id": "vector:LEDG:LEDG", "kind": "vector", "endpointId": "LEDG", "portId": "LEDG" }
+  ]
+}
