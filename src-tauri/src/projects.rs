@@ -352,3 +352,117 @@ pub fn create_project(app: tauri::AppHandle, parent_path: String, folder_name: S
     let request = ProjectSaveRequest { manifest, sources: template.sources };
     create_from_request(Path::new(&parent_path), &folder_name, &request)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestDir(PathBuf);
+
+    impl TestDir {
+        fn new(label: &str) -> Self {
+            let path = std::env::temp_dir().join(format!("logicboard-{label}-{}", timestamp().unwrap()));
+            fs::create_dir(&path).unwrap();
+            Self(path)
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn request(content: &str) -> ProjectSaveRequest {
+        ProjectSaveRequest {
+            manifest: ProjectManifest {
+                schema_version: 1,
+                name: "Test project".into(),
+                board_id: SUPPORTED_BOARD_ID.into(),
+                top_entity: "top".into(),
+                sources: vec!["src/top.vhd".into()],
+                assignments: vec![],
+            },
+            sources: vec![ProjectSource { path: "src/top.vhd".into(), content: content.into() }],
+        }
+    }
+
+    #[test]
+    fn validates_schema_paths_boards_and_assignments() {
+        let mut value = request("entity top is end entity;");
+        assert!(validate_save_request(&value).is_ok());
+        value.manifest.sources[0] = "../top.vhd".into();
+        assert!(validate_save_request(&value).unwrap_err().contains("Invalid project source"));
+        value = request("");
+        value.manifest.sources.push("src/TOP.vhd".into());
+        value.sources.push(ProjectSource { path: "src/TOP.vhd".into(), content: String::new() });
+        assert!(validate_save_request(&value).unwrap_err().contains("Duplicate"));
+        value = request("");
+        value.manifest.board_id = "unknown".into();
+        assert!(validate_save_request(&value).unwrap_err().contains("Unknown target board"));
+        value = request("");
+        value.manifest.assignments.push(ProjectAssignment { id: "a".into(), kind: "bad".into(), endpoint_id: "SW".into(), port_id: "SW".into() });
+        assert!(validate_save_request(&value).unwrap_err().contains("Invalid assignment kind"));
+    }
+
+    #[test]
+    fn creates_opens_saves_and_saves_as_projects() {
+        let parent = TestDir::new("roundtrip");
+        let created = create_from_request(&parent.0, "first", &request("old")).unwrap();
+        assert_eq!(created.sources[0].content, "old");
+        let root = PathBuf::from(&created.root_path);
+        transactional_write(&root, &request("new")).unwrap();
+        assert_eq!(load_project_root(&root).unwrap().sources[0].content, "new");
+        let copied = create_from_request(&parent.0, "second", &request("copy")).unwrap();
+        assert_eq!(copied.sources[0].content, "copy");
+        assert_ne!(created.root_path, copied.root_path);
+    }
+
+    #[test]
+    fn rejects_missing_and_oversized_sources() {
+        let root = TestDir::new("limits");
+        fs::write(root.0.join(MANIFEST_NAME), serde_json::to_vec(&request("").manifest).unwrap()).unwrap();
+        assert!(load_project_root(&root.0).unwrap_err().contains("Could not open project source"));
+        let oversized = "x".repeat(MAX_SOURCE_BYTES as usize + 1);
+        assert!(validate_save_request(&request(&oversized)).unwrap_err().contains("exceeds"));
+    }
+
+    #[test]
+    fn restores_replaced_files_when_a_transaction_fails() {
+        let root = TestDir::new("rollback");
+        transactional_write(&root.0, &request("original")).unwrap();
+        assert!(transactional_write_inner(&root.0, &request("replacement"), Some(1)).is_err());
+        let loaded = load_project_root(&root.0).unwrap();
+        assert_eq!(loaded.sources[0].content, "original");
+        assert_eq!(loaded.manifest.name, "Test project");
+    }
+
+    #[test]
+    fn bundled_templates_load_and_copies_are_independent() {
+        let templates = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates");
+        for template in PROJECT_TEMPLATES {
+            load_project_root(&templates.join(template.id)).unwrap();
+        }
+        let parent = TestDir::new("templates");
+        let template = load_project_root(&templates.join("led-switch-mirror")).unwrap();
+        let template_request = ProjectSaveRequest { manifest: template.manifest, sources: template.sources };
+        let first = create_from_request(&parent.0, "first", &template_request).unwrap();
+        let second = create_from_request(&parent.0, "second", &template_request).unwrap();
+        transactional_write(Path::new(&first.root_path), &request("changed")).unwrap();
+        assert_ne!(load_project_root(Path::new(&first.root_path)).unwrap().sources[0].content, load_project_root(Path::new(&second.root_path)).unwrap().sources[0].content);
+    }
+
+    #[test]
+    fn rejects_symlinks_that_escape_the_project_root() {
+        let root = TestDir::new("symlink-root");
+        let outside = TestDir::new("symlink-outside");
+        fs::write(outside.0.join("top.vhd"), "entity top is end entity;").unwrap();
+        fs::create_dir(root.0.join("src")).unwrap();
+        #[cfg(windows)]
+        if std::os::windows::fs::symlink_file(outside.0.join("top.vhd"), root.0.join("src/top.vhd")).is_err() { return; }
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(outside.0.join("top.vhd"), root.0.join("src/top.vhd")).unwrap();
+        fs::write(root.0.join(MANIFEST_NAME), serde_json::to_vec(&request("").manifest).unwrap()).unwrap();
+        assert!(load_project_root(&root.0).unwrap_err().contains("escapes"));
+    }
+}
