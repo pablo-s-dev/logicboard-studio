@@ -94,7 +94,7 @@ fn validate_folder_name(value: &str) -> Result<(), String> {
 }
 
 fn source_relative_path(value: &str) -> Result<PathBuf, String> {
-    if value.contains('\\') {
+    if value.contains('\\') || value.chars().any(|character| r#"<>:\"|?*"#.contains(character)) {
         return Err(format!("Project source paths must use forward slashes: {value}"));
     }
     let path = Path::new(value);
@@ -227,6 +227,10 @@ fn rollback_writes(writes: &mut [PendingWrite]) {
 }
 
 fn transactional_write(root: &Path, request: &ProjectSaveRequest) -> Result<(), String> {
+    transactional_write_inner(root, request, None)
+}
+
+fn transactional_write_inner(root: &Path, request: &ProjectSaveRequest, fail_before_apply: Option<usize>) -> Result<(), String> {
     let source_paths = validate_save_request(request)?;
     let root = canonical_project_root(root)?;
     let stamp = timestamp()?;
@@ -236,25 +240,38 @@ fn transactional_write(root: &Path, request: &ProjectSaveRequest) -> Result<(), 
 
     let mut writes = Vec::with_capacity(values.len());
     for (index, (relative, contents)) in values.into_iter().enumerate() {
-        let target = root.join(relative);
-        let parent = target.parent().ok_or_else(|| format!("Invalid project target: {}", target.display()))?;
-        fs::create_dir_all(parent).map_err(|error| format!("Could not create project source folder {}: {error}", parent.display()))?;
-        let checked_parent = parent.canonicalize().map_err(|error| format!("Could not validate project source folder {}: {error}", parent.display()))?;
-        if !checked_parent.starts_with(&root) {
-            return Err(format!("Project target escapes the project folder: {}", target.display()));
-        }
-        if target.exists() {
-            let checked_target = target.canonicalize().map_err(|error| format!("Could not validate project target {}: {error}", target.display()))?;
-            if !checked_target.starts_with(&root) || !checked_target.is_file() {
-                return Err(format!("Refusing to replace unsafe project target: {}", target.display()));
+        let staged = (|| -> Result<PendingWrite, String> {
+            let target = root.join(relative);
+            let parent = target.parent().ok_or_else(|| format!("Invalid project target: {}", target.display()))?;
+            fs::create_dir_all(parent).map_err(|error| format!("Could not create project source folder {}: {error}", parent.display()))?;
+            let checked_parent = parent.canonicalize().map_err(|error| format!("Could not validate project source folder {}: {error}", parent.display()))?;
+            if !checked_parent.starts_with(&root) {
+                return Err(format!("Project target escapes the project folder: {}", target.display()));
+            }
+            if target.exists() {
+                let checked_target = target.canonicalize().map_err(|error| format!("Could not validate project target {}: {error}", target.display()))?;
+                if !checked_target.starts_with(&root) || !checked_target.is_file() {
+                    return Err(format!("Refusing to replace unsafe project target: {}", target.display()));
+                }
+            }
+            let temporary = parent.join(format!(".logicboard-{stamp}-{index}.tmp"));
+            fs::write(&temporary, contents).map_err(|error| format!("Could not stage project file {}: {error}", target.display()))?;
+            Ok(PendingWrite { target, temporary, backup: None, applied: false })
+        })();
+        match staged {
+            Ok(write) => writes.push(write),
+            Err(error) => {
+                rollback_writes(&mut writes);
+                return Err(error);
             }
         }
-        let temporary = parent.join(format!(".logicboard-{stamp}-{index}.tmp"));
-        fs::write(&temporary, contents).map_err(|error| format!("Could not stage project file {}: {error}", target.display()))?;
-        writes.push(PendingWrite { target, temporary, backup: None, applied: false });
     }
 
     for index in 0..writes.len() {
+        if fail_before_apply == Some(index) {
+            rollback_writes(&mut writes);
+            return Err("Injected transactional write failure.".into());
+        }
         if writes[index].target.exists() {
             let backup = writes[index].target.with_file_name(format!(".logicboard-{stamp}-{index}.bak"));
             if let Err(error) = fs::rename(&writes[index].target, &backup) {
