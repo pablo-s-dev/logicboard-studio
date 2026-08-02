@@ -1,0 +1,202 @@
+import { memo, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { Cpu } from "lucide-react";
+import { endpointSort, groupSort } from "../../board";
+import { assignmentStatus } from "../../assignments/model";
+import type { BoardDefinition, BoardEndpoint, BoardGroup, ExpandedAssignment, MappingTarget } from "../../types";
+
+type BoardViewProps = {
+  board: BoardDefinition;
+  expandedAssignments: ExpandedAssignment[];
+  assignmentEnabled: boolean;
+  value: (endpoint: BoardEndpoint) => boolean;
+  onContext: (target: MappingTarget, event: React.MouseEvent) => void;
+  onInput: (endpoint: BoardEndpoint, next: boolean) => void;
+};
+
+const mappingTooltipText = "Clique com o botão direito para definir a porta deste pino";
+const inputTooltipText = "Clique com o botão esquerdo para interagir com este controle.";
+type TooltipState = { text: string; x: number; y: number } | null;
+type TooltipHandlers = {
+  onMouseEnter: (event: React.MouseEvent) => void;
+  onMouseMove: (event: React.MouseEvent) => void;
+  onMouseLeave: () => void;
+};
+
+const endpointTooltip = (endpoint: BoardEndpoint, assignment?: ExpandedAssignment) => {
+  const physicalPin = endpoint.pin ? `PIN_${endpoint.pin}` : "pino físico ainda não cadastrado";
+  if (assignment) return `${endpoint.label} -> ${assignment.portId} (${physicalPin}). ${mappingTooltipText}.`;
+  return `${endpoint.label} ainda sem porta mapeada (${physicalPin}). ${mappingTooltipText}.`;
+};
+
+const tooltipHandlers = (text: string, setTooltip: (tooltip: TooltipState) => void): TooltipHandlers => ({
+  onMouseEnter: (event) => {
+    event.stopPropagation();
+    setTooltip({ text, x: event.clientX, y: event.clientY });
+  },
+  onMouseMove: (event) => {
+    event.stopPropagation();
+    setTooltip({ text, x: event.clientX, y: event.clientY });
+  },
+  onMouseLeave: () => setTooltip(null)
+});
+
+export const BoardView = memo(function BoardView({ board, expandedAssignments, assignmentEnabled, value, onContext, onInput }: BoardViewProps) {
+  const [tooltip, setTooltip] = useState<TooltipState>(null);
+  const assignmentByEndpoint = new Map(expandedAssignments.map((assignment) => [assignment.endpointId, assignment]));
+  const assignedEndpointIds = new Set(assignmentByEndpoint.keys());
+  return <div className={`board-shell ${assignmentEnabled ? "" : "simulation-running"}`}>
+    <div className="board-canvas">
+      <div className="schematic-header"><div><b>{board.device}</b><span>Functional board schematic</span></div><Cpu size={36} /></div>
+      <div className="board-grid">
+        {[...board.groups].sort(groupSort).map((group) => <DeviceGroup
+          key={group.id}
+          group={group}
+          status={assignmentStatus(group, expandedAssignments)}
+          assignedEndpointIds={assignedEndpointIds}
+          assignmentByEndpoint={assignmentByEndpoint}
+          assignmentEnabled={assignmentEnabled}
+          setTooltip={setTooltip}
+          value={value}
+          onContext={onContext}
+          onInput={onInput}
+        />)}
+      </div>
+    </div>
+    {tooltip && <div className="board-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>{tooltip.text}</div>}
+  </div>;
+});
+
+function DeviceGroup({ group, status, assignedEndpointIds, assignmentByEndpoint, assignmentEnabled, setTooltip, value, onContext, onInput }: {
+  group: BoardGroup;
+  status: string;
+  assignedEndpointIds: Set<string>;
+  assignmentByEndpoint: Map<string, ExpandedAssignment>;
+  assignmentEnabled: boolean;
+  setTooltip: (tooltip: TooltipState) => void;
+  value: (endpoint: BoardEndpoint) => boolean;
+  onContext: (target: MappingTarget, event: React.MouseEvent) => void;
+  onInput: (endpoint: BoardEndpoint, next: boolean) => void;
+}) {
+  const vectorContext = (event: React.MouseEvent) => {
+    if (!assignmentEnabled) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (group.vectorName) {
+      event.preventDefault();
+      event.stopPropagation();
+      onContext({ mode: "vector", endpointId: group.id }, event);
+    }
+  };
+  const vectorTooltip = assignmentEnabled && group.vectorName ? "Clique com o botão direito para mapear o vetor inteiro" : null;
+  return <section className={`board-section ${group.kind} ${status}`} onContextMenu={vectorContext} {...(vectorTooltip ? tooltipHandlers(vectorTooltip, setTooltip) : {})}>
+    <h3>
+      <button type="button" className="group-vector-target" onContextMenu={vectorContext} {...(vectorTooltip ? tooltipHandlers(vectorTooltip, setTooltip) : {})}>
+        {group.label}
+      </button>
+    </h3>
+    <div className={group.kind === "seven-segment" ? "display-row" : "device-row"} data-count={group.children.length}>
+      {group.kind === "seven-segment"
+        ? <SevenSegmentGroup group={group} status={status} assignmentByEndpoint={assignmentByEndpoint} assignmentEnabled={assignmentEnabled} setTooltip={setTooltip} value={value} onContext={onContext} />
+        : [...group.children].sort(endpointSort).map((endpoint) => <BoardDevice
+          key={endpoint.id}
+          endpoint={endpoint}
+          mapped={assignedEndpointIds.has(endpoint.id)}
+          assignment={assignmentByEndpoint.get(endpoint.id)}
+          on={value(endpoint)}
+          assignmentEnabled={assignmentEnabled}
+          setTooltip={setTooltip}
+          onContext={onContext}
+          onInput={onInput}
+        />)}
+    </div>
+  </section>;
+}
+
+function BoardDevice({ endpoint, mapped, assignment, on, assignmentEnabled, setTooltip, onContext, onInput }: {
+  endpoint: BoardEndpoint;
+  mapped: boolean;
+  assignment?: ExpandedAssignment;
+  on: boolean;
+  assignmentEnabled: boolean;
+  setTooltip: (tooltip: TooltipState) => void;
+  onContext: (target: MappingTarget, event: React.MouseEvent) => void;
+  onInput: (endpoint: BoardEndpoint, next: boolean) => void;
+}) {
+  const isInteractiveInput = endpoint.direction === "in" && (endpoint.kind === "switch" || endpoint.kind === "button");
+  const runningTooltip = isInteractiveInput ? inputTooltipText : null;
+  const tooltip = assignmentEnabled ? endpointTooltip(endpoint, assignment) : runningTooltip;
+  const common = {
+    onContextMenu: (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!assignmentEnabled) return;
+      onContext({ mode: "granular", endpointId: endpoint.id }, event);
+    },
+    ...(tooltip ? tooltipHandlers(tooltip, setTooltip) : {})
+  };
+  const label = endpoint.displayLabel ?? endpoint.label;
+
+  if (endpoint.kind === "switch") {
+    return <button type="button" {...common} className={`toggle ${on ? "on" : ""} ${mapped ? "mapped" : ""}`} onClick={() => onInput(endpoint, !on)}><i /><span>{label}</span></button>;
+  }
+
+  if (endpoint.kind === "button") {
+    const press = (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      onInput(endpoint, false);
+    };
+    const release = (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      onInput(endpoint, true);
+    };
+    return <button type="button" {...common} className={`push ${mapped ? "mapped" : ""}`} onPointerDown={press} onPointerUp={release} onPointerCancel={release}><i /><span>{label}</span></button>;
+  }
+
+  if (endpoint.kind === "clock") {
+    return <button type="button" {...common} className={`clock-chip ${mapped ? "mapped" : ""} ${assignmentEnabled ? "" : "readonly-output"}`}>{endpoint.label.replace("CLOCK_", "")}<span>MHz</span></button>;
+  }
+
+  return <button type="button" {...common} className={`led-unit ${on ? "on" : ""} ${endpoint.kind.includes("green") ? "green" : "red"} ${mapped ? "mapped" : ""} ${assignmentEnabled ? "" : "readonly-output"}`}><i /><span>{label}</span></button>;
+}
+
+function SevenSegmentGroup({ group, status, assignmentByEndpoint, assignmentEnabled, setTooltip, value, onContext }: {
+  group: BoardGroup;
+  status: string;
+  assignmentByEndpoint: Map<string, ExpandedAssignment>;
+  assignmentEnabled: boolean;
+  setTooltip: (tooltip: TooltipState) => void;
+  value: (endpoint: BoardEndpoint) => boolean;
+  onContext: (target: MappingTarget, event: React.MouseEvent) => void;
+}) {
+  const active = group.children.some((endpoint) => value(endpoint));
+  const displayTooltip = assignmentEnabled ? "Clique com o botão direito para mapear o vetor inteiro" : null;
+  return <div
+    className={`seven-display ${status} ${active ? "on" : ""} ${assignmentEnabled ? "" : "readonly-output"}`}
+    role="button"
+    tabIndex={0}
+    {...(displayTooltip ? tooltipHandlers(displayTooltip, setTooltip) : {})}
+    onContextMenu={(event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!assignmentEnabled) return;
+      onContext({ mode: "vector", endpointId: group.id }, event);
+    }}
+  >
+    <div className="seven-face">
+      {[...group.children].sort(endpointSort).map((endpoint) => <span
+        key={endpoint.id}
+        className={`seg ${endpoint.segment ?? ""} ${value(endpoint) ? "on" : ""}`}
+        {...(assignmentEnabled ? tooltipHandlers(endpointTooltip(endpoint, assignmentByEndpoint.get(endpoint.id)), setTooltip) : {})}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!assignmentEnabled) return;
+          onContext({ mode: "granular", endpointId: endpoint.id }, event);
+        }}
+      />)}
+    </div>
+  </div>;
+}
