@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { LoadedProject, ProjectManifest, ProjectSource, ProjectTemplate } from "./model";
 
-export const isDesktopApp = () => "__TAURI_INTERNALS__" in window;
+export const isDesktopApp = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 const requireDesktop = () => {
   if (!isDesktopApp()) throw new Error("Project folders are available only in the Tauri desktop application.");
