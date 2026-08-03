@@ -80,6 +80,14 @@ fn timestamp() -> Result<u128, String> {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|value| value.as_nanos()).map_err(|error| error.to_string())
 }
 
+fn path_for_frontend(path: &Path) -> String {
+    let value = path.to_string_lossy();
+    if let Some(network_path) = value.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{network_path}");
+    }
+    value.strip_prefix(r"\\?\").unwrap_or(&value).to_string()
+}
+
 fn is_identifier(value: &str) -> bool {
     let mut chars = value.chars();
     matches!(chars.next(), Some(first) if first == '_' || first.is_ascii_alphabetic())
@@ -195,7 +203,7 @@ fn load_project_root(root: &Path) -> Result<LoadedProject, String> {
         sources.push(ProjectSource { path: relative.clone(), content: read_utf8_limited(&checked, MAX_SOURCE_BYTES, "VHDL source")? });
     }
     validate_top_entity(&manifest, &sources)?;
-    Ok(LoadedProject { root_path: root.to_string_lossy().to_string(), manifest, sources })
+    Ok(LoadedProject { root_path: path_for_frontend(&root), manifest, sources })
 }
 
 fn validate_top_entity(manifest: &ProjectManifest, sources: &[ProjectSource]) -> Result<(), String> {
@@ -364,7 +372,7 @@ pub fn list_project_templates() -> Vec<ProjectTemplate> {
 pub fn resolve_project_parent(app: tauri::AppHandle, preferred_path: Option<String>) -> Result<ProjectWorkspaceDefaults, String> {
     let documents = app.path().document_dir().map_err(|error| format!("Could not locate the Documents folder: {error}"))?;
     let parent = resolve_project_parent_path(preferred_path.as_deref().map(Path::new), &documents.join("LogicBoard Projects"))?;
-    Ok(ProjectWorkspaceDefaults { parent_path: parent.to_string_lossy().to_string() })
+    Ok(ProjectWorkspaceDefaults { parent_path: path_for_frontend(&parent) })
 }
 
 #[tauri::command]
@@ -397,6 +405,12 @@ pub fn create_project(app: tauri::AppHandle, parent_path: String, folder_name: S
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn removes_windows_verbatim_prefixes_from_frontend_paths() {
+        assert_eq!(path_for_frontend(Path::new(r"\\?\C:\Users\Pablo\Documents")), r"C:\Users\Pablo\Documents");
+        assert_eq!(path_for_frontend(Path::new(r"\\?\UNC\server\projects")), r"\\server\projects");
+    }
 
     struct TestDir(PathBuf);
 

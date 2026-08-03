@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addRecentProject, normalizeRecentProjects, recentProjectLimit } from "./recent";
+import { addRecentProject, displayProjectPath, normalizeRecentProjects, recentProjectLimit } from "./recent";
 
 describe("recent desktop projects", () => {
   it("sorts, deduplicates Windows paths and keeps eight entries", () => {
@@ -18,5 +18,10 @@ describe("recent desktop projects", () => {
       sources: [{ path: "src/top.vhd", content: "entity top is end entity;" }]
     }, 123);
     expect(recent[0]).toEqual({ rootPath: "C:\\Projects\\Demo", name: "Demo", lastOpenedAt: 123 });
+  });
+
+  it("removes Windows verbatim prefixes from paths shown in the interface", () => {
+    expect(displayProjectPath("\\\\?\\C:\\Users\\Pablo\\Documents")).toBe("C:\\Users\\Pablo\\Documents");
+    expect(displayProjectPath("\\\\?\\UNC\\server\\projects")).toBe("\\\\server\\projects");
   });
 });

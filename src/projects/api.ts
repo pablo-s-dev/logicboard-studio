@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { message, open } from "@tauri-apps/plugin-dialog";
 import type { LoadedProject, ProjectManifest, ProjectSource, ProjectTemplate, ProjectWorkspaceDefaults } from "./model";
+import { displayProjectPath } from "./recent";
 
 export const isDesktopApp = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -16,7 +17,8 @@ export async function chooseProjectFolder(defaultPath?: string) {
 
 export async function resolveProjectParent(preferredPath?: string) {
   requireDesktop();
-  return invoke<ProjectWorkspaceDefaults>("resolve_project_parent", { preferredPath });
+  const resolved = await invoke<ProjectWorkspaceDefaults>("resolve_project_parent", { preferredPath });
+  return { ...resolved, parentPath: displayProjectPath(resolved.parentPath) };
 }
 
 export async function showProjectError(error: unknown, title = "LogicBoard project error") {

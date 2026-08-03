@@ -10,9 +10,15 @@ export interface RecentProject {
   lastOpenedAt: number;
 }
 
+export function displayProjectPath(path: string) {
+  if (path.startsWith("\\\\?\\UNC\\")) return `\\\\${path.slice(8)}`;
+  return path.startsWith("\\\\?\\") ? path.slice(4) : path;
+}
+
 export function normalizeRecentProjects(items: RecentProject[]) {
   const seen = new Set<string>();
   return [...items]
+    .map((item) => ({ ...item, rootPath: displayProjectPath(item.rootPath) }))
     .filter((item) => item.rootPath.trim() && item.name.trim() && Number.isFinite(item.lastOpenedAt))
     .sort((left, right) => right.lastOpenedAt - left.lastOpenedAt)
     .filter((item) => {
@@ -38,7 +44,7 @@ export function addRecentProject(items: RecentProject[], project: LoadedProject,
 }
 
 export function parentPath(path: string) {
-  const normalized = path.replace(/[\\/]+$/, "");
+  const normalized = displayProjectPath(path).replace(/[\\/]+$/, "");
   const separator = Math.max(normalized.lastIndexOf("\\"), normalized.lastIndexOf("/"));
   return separator > 0 ? normalized.slice(0, separator) : normalized;
 }
