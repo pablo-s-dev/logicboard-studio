@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-03
+
 ### Added
 
 - Added a structured compilation report with the analysis engine and GHDL version, VHDL standard, project target, ordered sources and line counts, interface size, assigned pins, simulation model, duration, and compiler diagnostics.
