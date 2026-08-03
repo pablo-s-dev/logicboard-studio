@@ -43,6 +43,9 @@ export const BoardView = memo(function BoardView({ board, expandedAssignments, a
   const tooltipRef = useRef<HTMLDivElement>(null);
   const assignmentByEndpoint = new Map(expandedAssignments.map((assignment) => [assignment.endpointId, assignment]));
   const assignedEndpointIds = new Set(assignmentByEndpoint.keys());
+  const sortedGroups = [...board.groups].sort(groupSort);
+  const displayGroups = sortedGroups.filter((group) => group.kind === "seven-segment");
+  const deviceGroups = sortedGroups.filter((group) => group.kind !== "seven-segment");
 
   useLayoutEffect(() => {
     if (!tooltip) {
@@ -68,7 +71,16 @@ export const BoardView = memo(function BoardView({ board, expandedAssignments, a
     <div className="board-canvas">
       <div className="schematic-header"><div><b>{board.device}</b><span>{t("board.schematic")}</span><small>{t("board.instructions")}</small></div><Cpu size={36} /></div>
       <div className="board-grid">
-        {[...board.groups].sort(groupSort).map((group) => <DeviceGroup
+        {displayGroups.length > 0 && <HexDisplayCluster
+          groups={displayGroups}
+          expandedAssignments={expandedAssignments}
+          assignmentByEndpoint={assignmentByEndpoint}
+          assignmentEnabled={assignmentEnabled}
+          setTooltip={setTooltip}
+          value={value}
+          onContext={onContext}
+        />}
+        {deviceGroups.map((group) => <DeviceGroup
           key={group.id}
           group={group}
           status={assignmentStatus(group, expandedAssignments)}
@@ -135,6 +147,36 @@ function DeviceGroup({ group, status, assignedEndpointIds, assignmentByEndpoint,
           onContext={onContext}
           onInput={onInput}
         />)}
+    </div>
+  </section>;
+}
+
+function HexDisplayCluster({ groups, expandedAssignments, assignmentByEndpoint, assignmentEnabled, setTooltip, value, onContext }: {
+  groups: BoardGroup[];
+  expandedAssignments: ExpandedAssignment[];
+  assignmentByEndpoint: Map<string, ExpandedAssignment>;
+  assignmentEnabled: boolean;
+  setTooltip: (tooltip: TooltipState) => void;
+  value: (endpoint: BoardEndpoint) => boolean;
+  onContext: (target: MappingTarget, event: React.MouseEvent) => void;
+}) {
+  const { t } = useI18n();
+  return <section className="board-section seven-segment hex-cluster">
+    <h3>{t("board.group.HEXES")}</h3>
+    <div className="display-row">
+      {groups.map((group) => {
+        const status = assignmentStatus(group, expandedAssignments);
+        const vectorTooltip = assignmentEnabled ? t("board.mapVector") : null;
+        const vectorContext = (event: React.MouseEvent) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (assignmentEnabled) onContext({ mode: "vector", endpointId: group.id }, event);
+        };
+        return <div className={`hex-unit ${status}`} key={group.id}>
+          <button type="button" className="hex-vector-target" onContextMenu={vectorContext} {...(vectorTooltip ? tooltipHandlers(vectorTooltip, setTooltip) : {})}>{group.id}</button>
+          <SevenSegmentGroup group={group} status={status} assignmentByEndpoint={assignmentByEndpoint} assignmentEnabled={assignmentEnabled} setTooltip={setTooltip} value={value} onContext={onContext} />
+        </div>;
+      })}
     </div>
   </section>;
 }
