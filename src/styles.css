@@ -124,8 +124,9 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .files-panel { position: relative; display: flex; flex-direction: column; background: #0e1316; }
 .tree-scroll { flex: 1; min-height: 0; overflow: auto; }
 .panel-heading { height: 39px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 14px; font-size: 9px; letter-spacing: 1.1px; color: #84919a; }
-.collapse-button { border: 0; background: transparent; color: #7d8b94; min-width: var(--control-sm); width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-control); display: inline-grid; place-items: center; font-size: 14px; }
-.collapse-button:hover { background: #1a2328; color: #d8e3e8; }
+.collapse-button { border: 1px solid transparent; background: transparent; color: #7d8b94; min-width: var(--control-sm); width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-control); display: inline-grid; place-items: center; padding: 0; }
+.collapse-button:hover { border-color: #2c3b42; background: #1a2328; color: #d8e3e8; }
+.collapse-button:focus-visible { border-color: var(--cyan); outline: 1px solid #39d0d844; outline-offset: 1px; color: #d8e3e8; }
 .panel-rail { width: 100%; height: calc(100% - 39px); border: 0; border-top: 1px solid #1c2429; background: transparent; color: #7f8e96; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; padding-top: 12px; overflow: hidden; }
 .panel-rail.compact { height: 100%; border-top: 0; justify-content: flex-start; padding-top: 14px; }
 .panel-rail span { writing-mode: vertical-rl; text-transform: uppercase; letter-spacing: 1px; font-size: 8px; }

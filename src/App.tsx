@@ -18,6 +18,7 @@ import { LogPanel } from "./components/panels/LogPanel";
 import { CompilationPanel, type CompilationReport } from "./components/panels/CompilationPanel";
 import { CreditsPanel } from "./components/panels/CreditsPanel";
 import { Waveform } from "./components/panels/Waveform";
+import { CollapseButton } from "./components/ui/CollapseButton";
 import {
   buildSimulationClocks, effectivePace, formatFrequency, nsPerMs,
   simulatedTimeForWallClock
@@ -848,7 +849,7 @@ export default function App() {
           <div className="panel-heading"><span>{t("project.hub")}</span></div>
           <ProjectHub hasProject={hasProject} projectName={manifest.name} projectPath={project.rootPath} recentProjects={recentProjects} templates={projectTemplates} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} onRecent={(path) => void openRecentProject(path)} />
         </> : <>
-          <div className="panel-heading"><span>{t("explorer.title")}</span><button className="collapse-button" title={t("explorer.collapse")} onClick={() => setActivityView(null)}>‹</button></div>
+          <div className="panel-heading"><span>{t("explorer.title")}</span><CollapseButton direction="left" title={t("explorer.collapse")} onClick={() => setActivityView(null)} /></div>
           {hasProject ? <><div className="tree-scroll">
             <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
             {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
@@ -901,7 +902,7 @@ export default function App() {
       <div className="resize-handle horizontal bottom-handle" title={t("resize.bottom")} onPointerDown={(event) => startResize("bottom", event)} onDoubleClick={() => resetPane("bottom")} />
 
       <section className="bottom-panel">
-        <div className="bottom-tabs"><button className="collapse-button" title={collapsed.bottom ? t("bottom.expand") : t("bottom.collapse")} onClick={() => togglePane("bottom")}>{collapsed.bottom ? "⌃" : "⌄"}</button><button className={bottomTab === "waveform" ? "active" : ""} onClick={() => setBottomTab("waveform")}><Activity size={14} />{t("bottom.sample")}</button><button className={bottomTab === "compilation" ? "active" : ""} onClick={() => setBottomTab("compilation")}><TerminalSquare size={14} />{t("bottom.compilation")}</button><button className={bottomTab === "problems" ? "active" : ""} onClick={() => setBottomTab("problems")}><Info size={14} />{t("bottom.problems")} <i>{problems.length}</i></button><span /> <small>{waveform.length ? isClockedSimulation ? formatSimTime(timeRef.current) : t("wave.combinational") : t("bottom.noCapture")}</small></div>
+        <div className="bottom-tabs"><CollapseButton direction={collapsed.bottom ? "up" : "down"} title={collapsed.bottom ? t("bottom.expand") : t("bottom.collapse")} onClick={() => togglePane("bottom")} /><button className={bottomTab === "waveform" ? "active" : ""} onClick={() => setBottomTab("waveform")}><Activity size={14} />{t("bottom.sample")}</button><button className={bottomTab === "compilation" ? "active" : ""} onClick={() => setBottomTab("compilation")}><TerminalSquare size={14} />{t("bottom.compilation")}</button><button className={bottomTab === "problems" ? "active" : ""} onClick={() => setBottomTab("problems")}><Info size={14} />{t("bottom.problems")} <i>{problems.length}</i></button><span /><small>{waveform.length ? isClockedSimulation ? formatSimTime(timeRef.current) : t("wave.combinational") : t("bottom.noCapture")}</small></div>
         {!collapsed.bottom && (bottomTab === "waveform"
           ? <Waveform samples={waveform} assignments={expandedAssignments} timed={isClockedSimulation} />
           : bottomTab === "compilation"

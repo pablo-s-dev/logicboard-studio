@@ -3,6 +3,7 @@ import { compatibleGranularPorts, compatibleVectorPorts, findEndpoint, assignmen
 import { endpointSort, groupSort } from "../../board";
 import type { Assignment, BoardDefinition, EntityPort, ExpandedAssignment } from "../../types";
 import { useI18n } from "../../i18n";
+import { CollapseButton } from "../ui/CollapseButton";
 
 export type InspectorView = "assignments" | "ports" | "mapper";
 
@@ -41,7 +42,7 @@ export function InspectorPanel({
 
   return <aside className="inspector">
     <div className="inspector-tabs">
-      <button className="collapse-button" title={collapsed ? t("inspector.expand") : t("inspector.collapse")} onClick={onToggle}>{collapsed ? "‹" : "›"}</button>
+      <CollapseButton direction={collapsed ? "left" : "right"} title={collapsed ? t("inspector.expand") : t("inspector.collapse")} onClick={onToggle} />
       {!collapsed && <>
         <button className={view === "assignments" ? "active" : ""} onClick={() => onView("assignments")}>{t("inspector.assignments")}</button>
         <button className={view === "ports" ? "active" : ""} onClick={() => onView("ports")}>{t("inspector.ports")}</button>
