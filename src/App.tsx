@@ -43,7 +43,7 @@ type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationS
 type SimulationSessionResult = SimulationResult & { sessionId: string };
 type ProjectDialog = "new" | "project-settings" | "application-settings" | null;
 
-const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: 190 };
+const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: 96 };
 const defaultCollapsed: CollapsedPanes = { explorer: true, inspector: true, bottom: true };
 const emptyPortValues: Record<string, boolean> = {};
 const initialSimulationWarmupNs = 20_000_000;
@@ -445,7 +445,10 @@ export default function App() {
     setAssignmentToRemove(null);
   };
 
-  const togglePane = (pane: keyof CollapsedPanes) => setCollapsed((old) => ({ ...old, [pane]: !old[pane] }));
+  const togglePane = (pane: keyof CollapsedPanes) => setCollapsed((old) => {
+    if (pane === "bottom" && old.bottom) setPaneSizes((sizes) => ({ ...sizes, bottom: paneLimits.bottom[0] }));
+    return { ...old, [pane]: !old[pane] };
+  });
   const resetPane = (kind: ResizeKind) => setPaneSizes((old) => ({ ...old, [kind]: defaultPaneSizes[kind] }));
   const changeSpeed = useCallback((nextSpeed: number) => {
     if (simState === "running") {
@@ -466,7 +469,10 @@ export default function App() {
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
       const next = kind === "inspector" ? start - deltaX : kind === "bottom" ? start - deltaY : start + deltaX;
-      setPaneSizes((old) => ({ ...old, [kind]: clamp(next, paneLimits[kind]) }));
+      const limits: [number, number] = kind === "bottom"
+        ? [paneLimits.bottom[0], Math.max(paneLimits.bottom[0], (document.querySelector(".workspace")?.clientHeight ?? window.innerHeight) - 225)]
+        : paneLimits[kind];
+      setPaneSizes((old) => ({ ...old, [kind]: clamp(next, limits) }));
     };
     const stop = () => {
       window.removeEventListener("pointermove", move);
@@ -789,9 +795,11 @@ export default function App() {
       <aside className="files-panel">
         {collapsed.explorer ? <button className="panel-rail compact" title={t("explorer.expand")} onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
           <div className="panel-heading"><span>{t("explorer.title")}</span><button className="collapse-button" title={t("explorer.collapse")} onClick={() => togglePane("explorer")}>‹</button></div>
-          <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
-          {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
-          <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>{t("common.generated")}</em></button>
+          <div className="tree-scroll">
+            <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
+            {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
+            <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>{t("common.generated")}</em></button>
+          </div>
           <div className="files-footer"><div><span>{t("explorer.topEntity")}</span><strong>{topEntity}</strong></div></div>
         </>}
       </aside>
