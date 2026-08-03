@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added a dedicated Credits activity containing Pablo Santana de Oliveira and `pablosdev.portfolio.app`.
 - Added automated coverage for activity-bar selection, switching, and toggle-to-close behavior.
+- Added a reusable React collapse control with explicit left, right, up, and down directions.
 
 ### Changed
 
@@ -20,6 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed board groups and individual devices to retain their intrinsic minimum size instead of stretching into available space.
 - Changed the four HEX displays to fixed compact `62 × 72 px` cards.
 - Changed the desktop window to start maximized.
+- Changed timed samples to use one consistent millisecond display and removed the duplicate time from the bottom-panel header.
+- Replaced text-character collapse affordances with consistent chevron icons throughout the workspace.
+
+### Fixed
+
+- Removed the Windows verbatim `\\?\` prefix from project paths exposed to the interface while retaining canonical paths internally.
 
 ## [0.5.0] - 2026-08-03
 

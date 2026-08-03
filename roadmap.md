@@ -2,6 +2,19 @@
 
 This roadmap tracks the next implementation work for the editor, desktop project workflow, and bundled examples. A checked item is implemented and verified; unchecked items remain planned.
 
+## Workspace consistency
+
+- [x] Replace character-based pane controls with one reusable directional collapse button.
+- [x] Remove duplicate simulation time from the bottom-panel header.
+- [x] Present timed samples consistently in milliseconds and omit time for combinational projects.
+- [x] Keep Windows canonical-path prefixes internal and show normal project paths in the interface.
+
+Acceptance criteria:
+
+- Explorer, Inspector, and bottom-panel controls use the same accessible icon button with an explicit direction prop.
+- A timed sample has one visible elapsed-time value; an untimed combinational sample has none.
+- Project directories are displayed as familiar drive or network paths, never as Windows verbatim paths.
+
 ## Compilation feedback
 
 - [x] Replace the single compilation status sentence with a structured analysis report.
@@ -195,7 +208,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 48 tests passing across eleven test files.
-- `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 17 tests passing.
+- `npm test`: 50 tests passing across eleven test files.
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 18 tests passing.
 - Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
 - `npm run build`: TypeScript and Vite production build passing.
