@@ -200,11 +200,11 @@ export default function App() {
   useEffect(() => { localStorage.setItem(recentProjectsKey, JSON.stringify(recentProjects)); }, [recentProjects]);
   useEffect(() => { if (projectParent) localStorage.setItem(projectParentKey, projectParent); }, [projectParent]);
   useEffect(() => {
-    if (projectDialog !== "new" || !isDesktopApp()) return;
+    if (!isDesktopApp()) return;
     void resolveProjectParent(projectParent || undefined)
       .then(({ parentPath: resolved }) => setProjectParent(resolved))
       .catch((error) => setRuntimeProblems([String(error)]));
-  }, [projectDialog]);
+  }, []);
   useEffect(() => {
     if (!isDesktopApp()) return;
     void listTemplates().then(setProjectTemplates).catch((error) => setRuntimeProblems([String(error)]));
@@ -931,7 +931,20 @@ export default function App() {
       onCancel={() => setProjectDialog(null)}
       onSave={(settings) => { setManifest(settings); reset(); setProjectDialog(null); }}
     />}
-    {projectDialog === "application-settings" && <ApplicationSettingsDialog onCancel={() => setProjectDialog(null)} />}
+    {projectDialog === "application-settings" && <ApplicationSettingsDialog
+      projectParent={projectParent}
+      onBrowse={async (currentPath) => {
+        try {
+          const resolved = await resolveProjectParent(currentPath || undefined);
+          return await chooseProjectFolder(resolved.parentPath);
+        } catch (error) {
+          reportProjectError(error);
+          return null;
+        }
+      }}
+      onApplyProjectParent={setProjectParent}
+      onCancel={() => setProjectDialog(null)}
+    />}
     {unsavedOpen && <UnsavedChangesDialog
       projectName={manifest.name}
       saveAs={!project.rootPath}

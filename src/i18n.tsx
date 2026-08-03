@@ -7,8 +7,13 @@ type Variables = Record<string, string | number>;
 const ptBR: Record<string, string> = {
   "language.name": "Português (Brasil)",
   "settings.title": "Configurações",
+  "settings.general": "Geral",
+  "settings.credits": "Créditos",
+  "settings.credits.createdBy": "Criado e desenvolvido por",
   "settings.language": "Idioma da interface",
   "settings.language.help": "A preferência é salva neste computador.",
+  "settings.projectDirectory": "Diretório padrão de projetos VHDL",
+  "settings.projectDirectory.help": "Novos projetos e o seletor de pastas começam neste diretório.",
   "settings.apply": "Aplicar",
   "common.cancel": "Cancelar",
   "common.save": "Salvar",
@@ -30,6 +35,8 @@ const ptBR: Record<string, string> = {
   "project.name": "Nome do projeto",
   "project.folderName": "Nome da pasta",
   "project.location": "Diretório de projetos VHDL",
+  "project.location.defaultValue": "Documentos\\LogicBoard Projects",
+  "project.location.defaultHelp": "Diretório padrão: {{path}}. Uma nova subpasta será criada dentro dele.",
   "project.browse": "Procurar…",
   "project.location.help": "Uma nova subpasta será criada dentro do diretório escolhido.",
   "project.destination": "Projeto será criado em",
@@ -101,6 +108,7 @@ const ptBR: Record<string, string> = {
   "board.group.HEX1": "HEX1",
   "board.group.HEX2": "HEX2",
   "board.group.HEX3": "HEX3",
+  "board.group.HEXES": "Displays de sete segmentos",
   "board.mapVector": "Clique com o botão direito para mapear o vetor inteiro",
   "board.mapPin": "Clique com o botão direito para definir a porta deste pino",
   "board.interact": "Clique com o botão esquerdo para interagir com este controle.",
@@ -229,9 +237,16 @@ Object.assign(enUS, {
 });
 
 Object.assign(enUS, {
+  "settings.general": "General",
+  "settings.credits": "Credits",
+  "settings.credits.createdBy": "Created and developed by",
+  "settings.projectDirectory": "Default VHDL projects directory",
+  "settings.projectDirectory.help": "New projects and folder pickers start in this directory.",
   "editor.closeTab": "Close {{name}}",
   "editor.empty": "Select a file in Explorer to open the editor.",
   "project.location": "VHDL projects directory",
+  "project.location.defaultValue": "Documents\\LogicBoard Projects",
+  "project.location.defaultHelp": "Default directory: {{path}}. A new subfolder will be created inside it.",
   "project.browse": "Browse…",
   "project.location.help": "A new subfolder will be created inside the selected directory.",
   "project.destination": "Project will be created at",
@@ -250,6 +265,7 @@ Object.assign(enUS, {
   ,"explorer.noProject": "Open or create a project to explore its files."
   ,"welcome.title": "Start a VHDL project"
   ,"welcome.copy": "Create a blank project, open an existing folder, or use a ready-to-run example to learn and experiment."
+  ,"board.group.HEXES": "Seven-segment displays"
 });
 
 const messages: Record<Language, Record<string, string>> = { "pt-BR": ptBR, "en-US": enUS };
