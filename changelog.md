@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-03
+
+### Added
+
+- Added a labeled template section to New Project and exposed all starter templates permanently in the project switcher.
+- Added a configurable default VHDL projects directory to application settings.
+- Added a Credits settings tab for Pablo Santana de Oliveira and `pablosdev.portfolio.app`.
+
+### Changed
+
+- Kept New Project actions fixed below the scrollable form so Cancel and Create Project remain visible.
+- Changed seven-segment displays to a compact four-column strip and made the remaining board groups use stable columns with no more than two rows.
+- Improved interface and monospace font rendering and increased the legibility of compact labels and template descriptions.
+
+### Fixed
+
+- Fixed background project analysis to consume structured native diagnostics.
+- Prevented the production Windows application from opening an accompanying console window.
+
 ## [0.4.1] - 2026-08-03
 
 ### Added

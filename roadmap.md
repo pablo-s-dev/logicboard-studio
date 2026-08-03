@@ -153,6 +153,10 @@ Planned commits:
 - [x] Add a VS Code-style activity bar and project hub.
 - [x] Show a project welcome screen instead of silently loading a starter.
 - [x] Expose templates in project actions, the hub, and the empty recent-project list.
+- [x] Keep starter templates visible in the project switcher even when recent projects exist.
+- [x] Render the four seven-segment displays as a compact full-width exception.
+- [x] Keep device groups on stable columns with no more than two rows.
+- [x] Improve interface and editor font rendering for small labels and code.
 
 ## Desktop project experience
 
@@ -164,6 +168,10 @@ Planned commits:
 - [x] Treat an untouched starter as replaceable while protecting edited and recovered drafts.
 - [x] Automatically select the only remaining VHDL entity when the configured top disappears.
 - [x] Keep editable validation failures in Problems instead of showing a native blocking dialog.
+- [x] Keep New Project actions visible outside the scrollable form.
+- [x] Show and edit the default VHDL projects directory in application settings.
+- [x] Add application credits with the developer name and portfolio.
+- [x] Hide the production Windows console window.
 
 Planned commit:
 
@@ -183,7 +191,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 45 tests passing across ten test files.
+- `npm test`: 46 tests passing across ten test files.
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 17 tests passing.
 - Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
 - `npm run build`: TypeScript and Vite production build passing.
