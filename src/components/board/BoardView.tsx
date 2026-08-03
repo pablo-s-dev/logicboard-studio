@@ -1,10 +1,12 @@
-import { memo, useState } from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Cpu } from "lucide-react";
 import { endpointSort, groupSort } from "../../board";
 import { assignmentStatus } from "../../assignments/model";
 import type { BoardDefinition, BoardEndpoint, BoardGroup, ExpandedAssignment, MappingTarget } from "../../types";
 import { useI18n } from "../../i18n";
+import { placeTooltip, type Point } from "./tooltipPlacement";
 
 type BoardViewProps = {
   board: BoardDefinition;
@@ -37,10 +39,34 @@ const tooltipHandlers = (text: string, setTooltip: (tooltip: TooltipState) => vo
 export const BoardView = memo(function BoardView({ board, expandedAssignments, assignmentEnabled, value, onContext, onInput }: BoardViewProps) {
   const { t } = useI18n();
   const [tooltip, setTooltip] = useState<TooltipState>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<Point | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const assignmentByEndpoint = new Map(expandedAssignments.map((assignment) => [assignment.endpointId, assignment]));
   const assignedEndpointIds = new Set(assignmentByEndpoint.keys());
+
+  useLayoutEffect(() => {
+    if (!tooltip) {
+      setTooltipPosition(null);
+      return;
+    }
+    const update = () => {
+      const element = tooltipRef.current;
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      setTooltipPosition(placeTooltip(tooltip, rect, { width: window.innerWidth, height: window.innerHeight }));
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [tooltip]);
+
   return <div className={`board-shell ${assignmentEnabled ? "" : "simulation-running"}`}>
     <div className="board-canvas">
+      <div className="section-title board-section-title"><div><span>{t("board.title")}</span><small>{t("board.instructions")}</small></div></div>
       <div className="schematic-header"><div><b>{board.device}</b><span>{t("board.schematic")}</span></div><Cpu size={36} /></div>
       <div className="board-grid">
         {[...board.groups].sort(groupSort).map((group) => <DeviceGroup
@@ -57,7 +83,11 @@ export const BoardView = memo(function BoardView({ board, expandedAssignments, a
         />)}
       </div>
     </div>
-    {tooltip && <div className="board-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>{tooltip.text}</div>}
+    {tooltip && createPortal(<div
+      ref={tooltipRef}
+      className="board-tooltip"
+      style={{ left: tooltipPosition?.x ?? 0, top: tooltipPosition?.y ?? 0, visibility: tooltipPosition ? "visible" : "hidden" }}
+    >{tooltip.text}</div>, document.body)}
   </div>;
 });
 
