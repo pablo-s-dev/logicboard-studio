@@ -66,8 +66,7 @@ export const BoardView = memo(function BoardView({ board, expandedAssignments, a
 
   return <div className={`board-shell ${assignmentEnabled ? "" : "simulation-running"}`}>
     <div className="board-canvas">
-      <div className="section-title board-section-title"><div><span>{t("board.title")}</span><small>{t("board.instructions")}</small></div></div>
-      <div className="schematic-header"><div><b>{board.device}</b><span>{t("board.schematic")}</span></div><Cpu size={36} /></div>
+      <div className="schematic-header"><div><b>{board.device}</b><span>{t("board.schematic")}</span><small>{t("board.instructions")}</small></div><Cpu size={36} /></div>
       <div className="board-grid">
         {[...board.groups].sort(groupSort).map((group) => <DeviceGroup
           key={group.id}
