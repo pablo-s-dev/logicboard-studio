@@ -2,6 +2,18 @@
 
 This roadmap tracks the next implementation work for the editor, desktop project workflow, and bundled examples. A checked item is implemented and verified; unchecked items remain planned.
 
+## Compilation feedback
+
+- [x] Replace the single compilation status sentence with a structured analysis report.
+- [x] Show the GHDL version, VHDL standard, target entity and board, ordered sources, line counts, ports, assigned pins, clock model, duration, and raw diagnostics.
+- [x] Distinguish browser structural preflight from full desktop GHDL analysis without implying that GHDL ran in the preview.
+
+Acceptance criteria:
+
+- A successful desktop analysis identifies exactly what was analyzed and how long it took.
+- A browser preview remains useful while clearly describing its reduced validation scope.
+- Compiler warnings and errors remain available as readable raw output and in Problems when blocking.
+
 ## Editor reliability
 
 - [x] Keep editor line numbers synchronized with vertical source scrolling.

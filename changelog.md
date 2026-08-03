@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added a structured compilation report with the analysis engine and GHDL version, VHDL standard, project target, ordered sources and line counts, interface size, assigned pins, simulation model, duration, and compiler diagnostics.
+
+### Changed
+
+- Changed the browser compilation message into an explicit structural preflight report that distinguishes local preview checks from full desktop GHDL analysis.
+
 ## [0.4.0] - 2026-08-02
 
 ### Added
