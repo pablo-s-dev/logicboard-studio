@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import {
-  Activity, ChevronDown, CircleStop, Cpu, FileCode2, FolderOpen, Gauge,
+  Activity, ChevronDown, CircleStop, Cpu, FileCode2, FolderKanban, FolderOpen, Gauge,
   Info, MoreHorizontal, Play, RotateCcw, Save, Search, Settings2, TerminalSquare, Unplug
 } from "lucide-react";
 import { boards, cycloneII } from "./board";
 import {
   applyAssignment, expandAssignments, generateQsf, removeAssignmentTarget, validateAssignments
 } from "./assignments/model";
-import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, ProjectSwitcher, RemoveAssignmentDialog, UnsavedChangesDialog } from "./components/projects/ProjectControls";
+import { NewProjectDialog, ProjectHub, ProjectMenu, ProjectSettingsDialog, ProjectSwitcher, ProjectWelcome, RemoveAssignmentDialog, UnsavedChangesDialog } from "./components/projects/ProjectControls";
 import { ApplicationSettingsDialog } from "./components/settings/ApplicationSettingsDialog";
 import { AssignmentMenu } from "./components/panels/AssignmentMenu";
 import { BoardView } from "./components/board/BoardView";
@@ -37,6 +37,7 @@ type CollapsedPanes = { explorer: boolean; inspector: boolean; bottom: boolean }
 type ResizeKind = keyof PaneSizes;
 type SimState = "stopped" | "running";
 type BottomTab = "waveform" | "compilation" | "problems";
+type ActivityView = "explorer" | "projects";
 type SimulationInputEvent = { timeNs: number; portId: string; value: boolean };
 type SimulationSample = { timeNs: number; outputs: Record<string, boolean> };
 type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationSample[]; diagnostics: string[]; simulatedTimeNs: number };
@@ -93,7 +94,10 @@ export default function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>("waveform");
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false);
-  const [projectDialog, setProjectDialog] = useState<ProjectDialog>(() => isDesktopApp() && !project.legacyRecovered ? "new" : null);
+  const [projectDialog, setProjectDialog] = useState<ProjectDialog>(null);
+  const [hasProject, setHasProject] = useState(project.legacyRecovered);
+  const [activityView, setActivityView] = useState<ActivityView>(project.legacyRecovered ? "explorer" : "projects");
+  const [initialTemplateId, setInitialTemplateId] = useState<string | undefined>();
   const [projectTemplates, setProjectTemplates] = useState<ProjectTemplate[]>([]);
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [projectBusy, setProjectBusy] = useState(false);
@@ -282,6 +286,8 @@ export default function App() {
   const replaceProject = (loaded: LoadedProject) => {
     reset();
     load(loaded);
+    setHasProject(true);
+    setActivityView("explorer");
     rememberProject(loaded);
     setProjectDialog(null);
     setProjectMenuOpen(false);
@@ -328,7 +334,7 @@ export default function App() {
   const runProjectAction = (action: () => Promise<void>) => {
     setProjectMenuOpen(false);
     setProjectSwitcherOpen(false);
-    if (projectDirty) {
+    if (hasProject && projectDirty) {
       pendingProjectActionRef.current = action;
       setUnsavedOpen(true);
     } else {
@@ -361,7 +367,8 @@ export default function App() {
     }
   });
 
-  const showNewProject = () => runProjectAction(async () => {
+  const showNewProject = (templateId?: string) => runProjectAction(async () => {
+    setInitialTemplateId(templateId);
     setProjectDialog("new");
   });
 
@@ -370,6 +377,7 @@ export default function App() {
     setProjectBusy(true);
     try {
       replaceProject(await createProject(parent, folderName, templateId, name));
+      setInitialTemplateId(undefined);
     } catch (error) {
       reportProjectError(error);
     } finally {
@@ -725,7 +733,7 @@ export default function App() {
     .map((path) => availableEditorTabs.find((tab) => tab.path === path))
     .filter((tab): tab is NonNullable<typeof tab> => Boolean(tab));
   const workspaceStyle = {
-    "--explorer-width": `${collapsed.explorer ? 34 : paneSizes.explorer}px`,
+    "--explorer-width": `${activityView === "projects" ? 260 : collapsed.explorer ? 34 : paneSizes.explorer}px`,
     "--editor-width": `${paneSizes.editor}px`,
     "--inspector-width": `${collapsed.inspector ? 34 : paneSizes.inspector}px`,
     "--bottom-height": `${collapsed.bottom ? 34 : paneSizes.bottom}px`
@@ -746,23 +754,25 @@ export default function App() {
     <header className="topbar">
       <div className="brand"><div className="brand-mark"><Activity size={19} /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
       <div className="project-control" onClick={(event) => event.stopPropagation()}>
-        <button className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{manifest.name}{projectDirty ? " •" : ""}</b></div><ChevronDown size={14} /></button>
-        {projectSwitcherOpen && <ProjectSwitcher currentPath={project.rootPath} recentProjects={recentProjects} onSelect={(path) => void openRecentProject(path)} />}
+        <button className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{hasProject ? `${manifest.name}${projectDirty ? " •" : ""}` : t("project.none")}</b></div><ChevronDown size={14} /></button>
+        {projectSwitcherOpen && <ProjectSwitcher currentPath={hasProject ? project.rootPath : null} recentProjects={recentProjects} templates={projectTemplates} onSelect={(path) => void openRecentProject(path)} onTemplate={(templateId) => { setProjectSwitcherOpen(false); showNewProject(templateId); }} />}
         <button className="project-actions-button" title={t("project.actions")} aria-label={t("project.actions")} onClick={() => { setProjectSwitcherOpen(false); setProjectMenuOpen((open) => !open); }}><MoreHorizontal size={17} /></button>
         {projectMenuOpen && <ProjectMenu
           onNew={() => { setProjectMenuOpen(false); showNewProject(); }}
           onOpen={() => { setProjectMenuOpen(false); void openExistingProject(); }}
+          onTemplates={() => { setProjectMenuOpen(false); setActivityView("projects"); showNewProject(projectTemplates.find((template) => template.id !== "blank")?.id); }}
           onSaveAs={() => { setProjectMenuOpen(false); void persistProject(true); }}
           onSettings={() => { setProjectMenuOpen(false); setProjectDialog("project-settings"); }}
+          hasProject={hasProject}
         />}
       </div>
       <div className="top-spacer" />
-      <div className={`status ${isCompiling ? "compiling" : simState}`}><i />{statusLabel}</div>
-      <button className="icon-button" disabled={projectBusy || (Boolean(project.rootPath) && !projectDirty)} title={t("project.save.title")} onClick={() => void persistProject()}><Save size={17} /></button>
+      {hasProject && <div className={`status ${isCompiling ? "compiling" : simState}`}><i />{statusLabel}</div>}
+      <button className="icon-button" disabled={!hasProject || projectBusy || (Boolean(project.rootPath) && !projectDirty)} title={t("project.save.title")} onClick={() => void persistProject()}><Save size={17} /></button>
       <button className="icon-button" title={t("settings.title")} onClick={() => setProjectDialog("application-settings")}><Settings2 size={17} /></button>
     </header>
 
-    <div className="toolbar">
+    {hasProject && <div className="toolbar">
       <label className="board-select">
         <Cpu size={16} />
         <span>
@@ -789,20 +799,28 @@ export default function App() {
       </button>
       <button className="icon-button" onClick={reset} title={t("toolbar.reset")}><RotateCcw size={16} /></button>
       {isClockedSimulation && <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>}
-    </div>
+    </div>}
 
-    <main className={`workspace ${collapsed.explorer ? "explorer-collapsed" : ""} ${collapsed.inspector ? "inspector-collapsed" : ""} ${collapsed.bottom ? "bottom-collapsed" : ""}`} style={workspaceStyle}>
+    <main className={`workspace ${hasProject ? "" : "no-project"} ${activityView === "explorer" && collapsed.explorer ? "explorer-collapsed" : ""} ${collapsed.inspector ? "inspector-collapsed" : ""} ${collapsed.bottom ? "bottom-collapsed" : ""}`} style={workspaceStyle}>
+      <nav className="activity-bar" aria-label={t("activity.title")}>
+        <button className={activityView === "explorer" ? "active" : ""} title={t("explorer.title")} onClick={() => setActivityView("explorer")}><FileCode2 size={20} /></button>
+        <button className={activityView === "projects" ? "active" : ""} title={t("project.hub")} onClick={() => setActivityView("projects")}><FolderKanban size={20} /></button>
+      </nav>
       <aside className="files-panel">
-        {collapsed.explorer ? <button className="panel-rail compact" title={t("explorer.expand")} onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
+        {activityView === "projects" ? <>
+          <div className="panel-heading"><span>{t("project.hub")}</span></div>
+          <ProjectHub hasProject={hasProject} projectName={manifest.name} projectPath={project.rootPath} recentProjects={recentProjects} templates={projectTemplates} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} onRecent={(path) => void openRecentProject(path)} />
+        </> : collapsed.explorer ? <button className="panel-rail compact" title={t("explorer.expand")} onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
           <div className="panel-heading"><span>{t("explorer.title")}</span><button className="collapse-button" title={t("explorer.collapse")} onClick={() => togglePane("explorer")}>‹</button></div>
-          <div className="tree-scroll">
+          {hasProject ? <><div className="tree-scroll">
             <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
             {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
             <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>{t("common.generated")}</em></button>
           </div>
-          <div className="files-footer"><div><span>{t("explorer.topEntity")}</span><strong>{topEntity}</strong></div></div>
+          <div className="files-footer"><div><span>{t("explorer.topEntity")}</span><strong>{topEntity}</strong></div></div></> : <p className="empty-list">{t("explorer.noProject")}</p>}
         </>}
       </aside>
+      {hasProject ? <>
       <div className="resize-handle vertical explorer-handle" title={t("resize.explorer")} onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />
 
       <EditorPanel
@@ -853,6 +871,7 @@ export default function App() {
             ? <LogPanel lines={compilationLog} empty={t("bottom.noCompilation")} />
             : <LogPanel lines={problems} empty={t("bottom.noProblems")} problem />)}
       </section>
+      </> : <ProjectWelcome templates={projectTemplates} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} />}
     </main>
 
     {context && <AssignmentMenu
@@ -873,6 +892,7 @@ export default function App() {
     {projectDialog === "new" && <NewProjectDialog
       templates={projectTemplates}
       parentPath={projectParent}
+      initialTemplateId={initialTemplateId}
       onCancel={() => setProjectDialog(null)}
       onBrowse={() => void browseProjectParent()}
       onCreate={(name, folderName, templateId, parent) => void createNewProject(name, folderName, templateId, parent)}

@@ -1,4 +1,4 @@
-import { Check, FolderOpen, FolderPlus, Save, Settings2 } from "lucide-react";
+import { Check, FolderOpen, FolderPlus, LayoutTemplate, Save, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { BoardDefinition } from "../../types";
 import type { ProjectTemplate } from "../../projects/model";
@@ -6,10 +6,12 @@ import { projectFolderName } from "../../projects/api";
 import { useI18n } from "../../i18n";
 import type { RecentProject } from "../../projects/recent";
 
-export function ProjectSwitcher({ currentPath, recentProjects, onSelect }: {
+export function ProjectSwitcher({ currentPath, recentProjects, templates, onSelect, onTemplate }: {
   currentPath: string | null;
   recentProjects: RecentProject[];
+  templates: ProjectTemplate[];
   onSelect: (path: string) => void;
+  onTemplate: (templateId: string) => void;
 }) {
   const { t } = useI18n();
   return <div className="project-switcher" onClick={(event) => event.stopPropagation()}>
@@ -17,22 +19,30 @@ export function ProjectSwitcher({ currentPath, recentProjects, onSelect }: {
     {recentProjects.length ? recentProjects.map((project) => <button key={project.rootPath} className={currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? "current" : ""} onClick={() => onSelect(project.rootPath)}>
       <span>{currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? <Check size={13} /> : <FolderOpen size={13} />}</span>
       <div><b>{project.name}</b><small>{project.rootPath}</small></div>
-    </button>) : <p>{t("project.recent.empty")}</p>}
+    </button>) : <>
+      <p>{t("project.recent.empty.templates")}</p>
+      {templates.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}>
+        <span><LayoutTemplate size={13} /></span><div><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></div>
+      </button>)}
+    </>}
   </div>;
 }
 
-export function ProjectMenu({ onNew, onOpen, onSaveAs, onSettings }: {
+export function ProjectMenu({ onNew, onOpen, onTemplates, onSaveAs, onSettings, hasProject }: {
   onNew: () => void;
   onOpen: () => void;
+  onTemplates: () => void;
   onSaveAs: () => void;
   onSettings: () => void;
+  hasProject: boolean;
 }) {
   const { t } = useI18n();
   return <div className="project-menu project-actions-menu" onClick={(event) => event.stopPropagation()}>
     <button onClick={onNew}><FolderPlus size={14} /><span><b>{t("project.new")}</b><small>{t("project.new.help")}</small></span></button>
     <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t("project.open.help")}</small></span></button>
-    <button onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t("project.saveAs.help")}</small></span></button>
-    <button onClick={onSettings}><Settings2 size={14} /><span><b>{t("project.settings")}</b><small>{t("project.settings.help")}</small></span></button>
+    <button onClick={onTemplates}><LayoutTemplate size={14} /><span><b>{t("project.templates")}</b><small>{t("project.templates.help")}</small></span></button>
+    <button disabled={!hasProject} onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t("project.saveAs.help")}</small></span></button>
+    <button disabled={!hasProject} onClick={onSettings}><Settings2 size={14} /><span><b>{t("project.settings")}</b><small>{t("project.settings.help")}</small></span></button>
   </div>;
 }
 
@@ -43,9 +53,10 @@ const fallbackTemplates: ProjectTemplate[] = [
   { id: "four-digit-timer", name: "Four-digit timer", description: "Clocked timer with buttons, LEDs, and four seven-segment displays." }
 ];
 
-export function NewProjectDialog({ templates, parentPath, onCancel, onBrowse, onCreate }: {
+export function NewProjectDialog({ templates, parentPath, initialTemplateId, onCancel, onBrowse, onCreate }: {
   templates: ProjectTemplate[];
   parentPath: string;
+  initialTemplateId?: string;
   onCancel: () => void;
   onBrowse: () => void;
   onCreate: (name: string, folderName: string, templateId: string, parentPath: string) => void;
@@ -54,7 +65,7 @@ export function NewProjectDialog({ templates, parentPath, onCancel, onBrowse, on
   const available = templates.length ? templates : fallbackTemplates;
   const [name, setName] = useState("Meu projeto LogicBoard");
   const [folderName, setFolderName] = useState(projectFolderName(name));
-  const [templateId, setTemplateId] = useState(available[0].id);
+  const [templateId, setTemplateId] = useState(available.some((template) => template.id === initialTemplateId) ? initialTemplateId! : available[0].id);
   const [folderEdited, setFolderEdited] = useState(false);
 
   useEffect(() => {
@@ -74,6 +85,43 @@ export function NewProjectDialog({ templates, parentPath, onCancel, onBrowse, on
     </div>
     <div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim() || !parentPath} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>
   </Modal>;
+}
+
+export function ProjectHub({ hasProject, projectName, projectPath, recentProjects, templates, onNew, onOpen, onTemplate, onRecent }: {
+  hasProject: boolean;
+  projectName: string;
+  projectPath: string | null;
+  recentProjects: RecentProject[];
+  templates: ProjectTemplate[];
+  onNew: () => void;
+  onOpen: () => void;
+  onTemplate: (templateId: string) => void;
+  onRecent: (path: string) => void;
+}) {
+  const { t } = useI18n();
+  return <div className="project-hub">
+    {hasProject && <div className="project-hub-current"><small>{t("project.current")}</small><b>{projectName}</b><span>{projectPath ?? t("project.unsaved")}</span></div>}
+    <div className="project-hub-actions"><button onClick={onNew}><FolderPlus size={15} />{t("project.new")}</button><button onClick={onOpen}><FolderOpen size={15} />{t("project.open")}</button></div>
+    <h3>{t("project.recent")}</h3>
+    {recentProjects.length ? recentProjects.map((recent) => <button className="project-hub-item" key={recent.rootPath} onClick={() => onRecent(recent.rootPath)}><FolderOpen size={14} /><span><b>{recent.name}</b><small>{recent.rootPath}</small></span></button>) : <p>{t("project.recent.empty")}</p>}
+    <h3>{t("project.templates")}</h3>
+    {templates.map((template) => <button className="project-hub-item" key={template.id} onClick={() => onTemplate(template.id)}><LayoutTemplate size={14} /><span><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></span></button>)}
+  </div>;
+}
+
+export function ProjectWelcome({ templates, onNew, onOpen, onTemplate }: {
+  templates: ProjectTemplate[];
+  onNew: () => void;
+  onOpen: () => void;
+  onTemplate: (templateId: string) => void;
+}) {
+  const { t } = useI18n();
+  return <section className="project-welcome">
+    <div className="welcome-mark"><LayoutTemplate size={30} /></div>
+    <small>LOGICBOARD STUDIO</small><h1>{t("welcome.title")}</h1><p>{t("welcome.copy")}</p>
+    <div className="welcome-actions"><button className="primary" onClick={onNew}><FolderPlus size={16} />{t("project.new")}</button><button onClick={onOpen}><FolderOpen size={16} />{t("project.open")}</button></div>
+    <div className="welcome-templates">{templates.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}><LayoutTemplate size={15} /><span><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></span></button>)}</div>
+  </section>;
 }
 
 function joinDisplayPath(parentPath: string, folderName: string) {

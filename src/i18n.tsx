@@ -37,6 +37,17 @@ const ptBR: Record<string, string> = {
   "project.actions": "Ações do projeto",
   "project.recent": "PROJETOS RECENTES",
   "project.recent.empty": "Nenhum projeto recente.",
+  "project.recent.empty.templates": "Nenhum projeto recente. Comece com um template:",
+  "project.templates": "Templates",
+  "project.templates.help": "Crie um projeto a partir de um exemplo",
+  "project.current": "Projeto atual",
+  "project.unsaved": "Ainda não salvo",
+  "project.none": "Nenhum projeto aberto",
+  "project.hub": "PROJETOS",
+  "activity.title": "Atividades",
+  "explorer.noProject": "Abra ou crie um projeto para explorar seus arquivos.",
+  "welcome.title": "Comece um projeto VHDL",
+  "welcome.copy": "Crie um projeto em branco, abra uma pasta existente ou use um dos exemplos prontos para aprender e experimentar.",
   "project.targetBoard": "Placa de destino",
   "project.topEntity": "Entidade principal",
   "project.unsaved.title": "Alterações não salvas",
@@ -197,6 +208,17 @@ Object.assign(enUS, {
   "project.actions": "Project actions",
   "project.recent": "RECENT PROJECTS",
   "project.recent.empty": "No recent projects."
+  ,"project.recent.empty.templates": "No recent projects. Start with a template:"
+  ,"project.templates": "Templates"
+  ,"project.templates.help": "Create a project from an example"
+  ,"project.current": "Current project"
+  ,"project.unsaved": "Not saved yet"
+  ,"project.none": "No project open"
+  ,"project.hub": "PROJECTS"
+  ,"activity.title": "Activities"
+  ,"explorer.noProject": "Open or create a project to explore its files."
+  ,"welcome.title": "Start a VHDL project"
+  ,"welcome.copy": "Create a blank project, open an existing folder, or use a ready-to-run example to learn and experiment."
 });
 
 const messages: Record<Language, Record<string, string>> = { "pt-BR": ptBR, "en-US": enUS };
