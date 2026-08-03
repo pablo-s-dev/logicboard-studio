@@ -226,7 +226,7 @@ export default function App() {
   }, [localProjectProblems, sourcePayloads, sourceStateKey]);
   useEffect(() => {
     if (simState !== "running") return;
-    if (isTauriApp() && simulationClocks.length) return;
+    if (!simulationClocks.length || isTauriApp()) return;
     const timer = window.setInterval(() => {
       timeRef.current += 10;
       const values = Object.fromEntries(expandedAssignments.map((assignment) => {
@@ -477,14 +477,14 @@ export default function App() {
   }, [paneSizes]);
 
   const appendWaveSample = useCallback((outputs: Record<string, boolean>) => {
-    timeRef.current += 10;
+    timeRef.current = simulationClocks.length ? timeRef.current + 10 : 0;
     const values = Object.fromEntries(expandedAssignments.map((assignment) => {
       const endpoint = selectedBoard.endpoints.find((item) => item.id === assignment.endpointId);
       if (!endpoint) return [assignment.endpointId, false];
       return [assignment.endpointId, visualEndpointValue(endpoint, inputs, expandedAssignments, outputs)];
     }));
     setWaveform([{ time: timeRef.current, values }]);
-  }, [expandedAssignments, inputs, selectedBoard.endpoints]);
+  }, [expandedAssignments, inputs, selectedBoard.endpoints, simulationClocks.length]);
 
   const appendSimulationSamples = useCallback((samples: SimulationSample[]) => {
     if (!samples.length) return;
@@ -725,7 +725,8 @@ export default function App() {
     "--bottom-height": `${collapsed.bottom ? 34 : paneSizes.bottom}px`
   } as CSSProperties;
   const isRunBusy = isCompiling || isSimulating;
-  const statusLabel = isCompiling ? t("status.compiling") : isSimulating ? t("status.starting") : simState === "stopped" ? t("status.ready") : t("status.running");
+  const isClockedSimulation = simulationClocks.length > 0;
+  const statusLabel = isCompiling ? t("status.compiling") : isSimulating ? t("status.starting") : simState === "stopped" ? t("status.ready") : isClockedSimulation ? t("status.running") : t("status.interactive");
   const paceLabel = simState === "running"
     ? simPace < speed * 0.9
       ? t("pace.behind", { pace: simPace.toFixed(2) })
@@ -772,17 +773,16 @@ export default function App() {
           </select>
         </span>
       </label>
-      <div className="device-chip">{selectedBoard.device}</div>
       {clockNotice && <div className={`clock-notice ${simState === "running" ? "running" : ""}`} title={clockNoticeTooltip} aria-label={clockNoticeTooltip}>
         <Info size={14} />
         <span>{t("toolbar.clockNotice", { frequency: clockNotice.simulation })}</span>
       </div>}
       <div className="toolbar-spacer" />
-      <button className={`control ${simState === "running" ? "quiet" : ""}`} disabled={simState !== "running" && isRunBusy} onClick={() => simState === "running" ? stopSimulation() : void runSimulation()}>
-        {simState === "running" ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" ? t("toolbar.stop") : isCompiling ? t("toolbar.compiling") : isSimulating ? t("toolbar.starting") : t("toolbar.run")}
+      <button className={`control ${simState === "running" && isClockedSimulation ? "quiet" : ""}`} disabled={isRunBusy} onClick={() => simState === "running" && isClockedSimulation ? stopSimulation() : void runSimulation()}>
+        {simState === "running" && isClockedSimulation ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" && isClockedSimulation ? t("toolbar.stop") : isCompiling ? t("toolbar.compiling") : isSimulating ? t("toolbar.starting") : simState === "running" ? t("toolbar.refresh") : t("toolbar.run")}
       </button>
       <button className="icon-button" onClick={reset} title={t("toolbar.reset")}><RotateCcw size={16} /></button>
-      <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>
+      {isClockedSimulation && <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>}
     </div>
 
     <main className={`workspace ${collapsed.explorer ? "explorer-collapsed" : ""} ${collapsed.inspector ? "inspector-collapsed" : ""} ${collapsed.bottom ? "bottom-collapsed" : ""}`} style={workspaceStyle}>
@@ -838,9 +838,9 @@ export default function App() {
       <div className="resize-handle horizontal bottom-handle" title={t("resize.bottom")} onPointerDown={(event) => startResize("bottom", event)} onDoubleClick={() => resetPane("bottom")} />
 
       <section className="bottom-panel">
-        <div className="bottom-tabs"><button className="collapse-button" title={collapsed.bottom ? t("bottom.expand") : t("bottom.collapse")} onClick={() => togglePane("bottom")}>{collapsed.bottom ? "⌃" : "⌄"}</button><button className={bottomTab === "waveform" ? "active" : ""} onClick={() => setBottomTab("waveform")}><Activity size={14} />{t("bottom.sample")}</button><button className={bottomTab === "compilation" ? "active" : ""} onClick={() => setBottomTab("compilation")}><TerminalSquare size={14} />{t("bottom.compilation")}</button><button className={bottomTab === "problems" ? "active" : ""} onClick={() => setBottomTab("problems")}><Info size={14} />{t("bottom.problems")} <i>{problems.length}</i></button><span /> <small>{waveform.length ? `${timeRef.current} ns` : t("bottom.noCapture")}</small></div>
+        <div className="bottom-tabs"><button className="collapse-button" title={collapsed.bottom ? t("bottom.expand") : t("bottom.collapse")} onClick={() => togglePane("bottom")}>{collapsed.bottom ? "⌃" : "⌄"}</button><button className={bottomTab === "waveform" ? "active" : ""} onClick={() => setBottomTab("waveform")}><Activity size={14} />{t("bottom.sample")}</button><button className={bottomTab === "compilation" ? "active" : ""} onClick={() => setBottomTab("compilation")}><TerminalSquare size={14} />{t("bottom.compilation")}</button><button className={bottomTab === "problems" ? "active" : ""} onClick={() => setBottomTab("problems")}><Info size={14} />{t("bottom.problems")} <i>{problems.length}</i></button><span /> <small>{waveform.length ? isClockedSimulation ? formatSimTime(timeRef.current) : t("wave.combinational") : t("bottom.noCapture")}</small></div>
         {!collapsed.bottom && (bottomTab === "waveform"
-          ? <Waveform samples={waveform} assignments={expandedAssignments} />
+          ? <Waveform samples={waveform} assignments={expandedAssignments} timed={isClockedSimulation} />
           : bottomTab === "compilation"
             ? <LogPanel lines={compilationLog} empty={t("bottom.noCompilation")} />
             : <LogPanel lines={problems} empty={t("bottom.noProblems")} problem />)}

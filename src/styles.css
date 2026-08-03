@@ -333,7 +333,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .wave-traces svg { display: block; height: var(--wave-row-height); position: relative; z-index: 1; }
 .wave-segment, .wave-transition { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: square; }
 .sample-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #0b1013; }
-.sample-toolbar { min-height: 32px; padding: 0 12px; border-bottom: 1px solid #1a2227; display: grid; grid-template-columns: minmax(120px, 1fr) auto auto; align-items: center; gap: 14px; color: #7c8b93; font-size: 8px; }
+.sample-toolbar { min-height: 32px; padding: 0 12px; border-bottom: 1px solid #1a2227; display: grid; grid-template-columns: minmax(120px, 1fr) auto; align-items: center; gap: 14px; color: #7c8b93; font-size: 8px; }
 .sample-toolbar b { display: block; color: #b7c7cc; font-size: 9px; line-height: 12px; }
 .sample-toolbar span { color: #697780; }
 .sample-toolbar button { height: 23px; border: 1px solid #27343b; background: #11191d; color: #9adce0; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 8px; padding: 0 8px; cursor: default; }
@@ -342,7 +342,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .sample-legend span { display: inline-flex; align-items: center; gap: 5px; color: #84949c; }
 .sample-legend i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
 .sample-table { flex: 1; min-height: 0; overflow: auto; padding: 8px 10px 12px; display: grid; align-content: start; gap: 5px; }
-.sample-row { min-height: 30px; border: 1px solid #1a2227; background: #0e1518; display: grid; grid-template-columns: 24px minmax(0, 1fr) 34px; align-items: center; gap: 8px; padding: 0 10px 0 6px; }
+.sample-row { min-height: 30px; border: 1px solid #1a2227; background: #0e1518; display: grid; grid-template-columns: minmax(0, 1fr) 34px; align-items: center; gap: 8px; padding: 0 10px; }
 .sample-row button { width: 22px; height: 22px; border: 0; border-radius: 4px; background: transparent; color: #576871; display: grid; place-items: center; cursor: default; }
 .sample-row button:hover { background: #182227; color: #c6f6f8; }
 .sample-row span { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
