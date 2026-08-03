@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import {
   Activity, ChevronDown, CircleStop, Cpu, FileCode2, FolderOpen, Gauge,
-  Info, Play, RotateCcw, Save, Search, Settings2, TerminalSquare, Unplug
+  Info, MoreHorizontal, Play, RotateCcw, Save, Search, Settings2, TerminalSquare, Unplug
 } from "lucide-react";
 import { boards, cycloneII } from "./board";
 import {
   applyAssignment, expandAssignments, generateQsf, validateAssignments
 } from "./assignments/model";
-import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, UnsavedChangesDialog } from "./components/projects/ProjectControls";
+import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, ProjectSwitcher, UnsavedChangesDialog } from "./components/projects/ProjectControls";
 import { ApplicationSettingsDialog } from "./components/settings/ApplicationSettingsDialog";
 import { AssignmentMenu } from "./components/panels/AssignmentMenu";
 import { BoardView } from "./components/board/BoardView";
@@ -23,11 +23,12 @@ import {
 import type { SimulationClockConfig } from "./simulation";
 import type { Assignment, BoardEndpoint, EntityPort, MappingMode, MappingTarget, WaveSample } from "./types";
 import { parseEntityPorts, previewOutputs } from "./vhdl";
-import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, saveProject, saveProjectAs, showProjectError } from "./projects/api";
+import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, resolveProjectParent, saveProject, saveProjectAs, showProjectError } from "./projects/api";
 import { useProjectWorkspace } from "./projects/useProjectWorkspace";
 import { validateProjectManifest } from "./projects/model";
 import { isProjectSourceDirty, shouldContinueProjectAction } from "./projects/model";
 import type { LoadedProject, ProjectTemplate } from "./projects/model";
+import { addRecentProject, loadRecentProjects, parentPath, projectParentKey, recentProjectsKey } from "./projects/recent";
 import { useI18n } from "./i18n";
 
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
@@ -78,7 +79,7 @@ export default function App() {
   const { t } = useI18n();
   const workspace = useProjectWorkspace();
   const { project, manifest, assignments, setAssignments, setBoardId, setManifest, dirty: projectDirty, activeIsConstraints,
-    activeSource, topSource, entityNames, setActivePath, updateActiveContent, load, markSaved, sourcePayloads, sourceStateKey, constraintsPath } = workspace;
+    activeSource, topSource, entityNames, setActivePath, closePath, updateActiveContent, load, markSaved, sourcePayloads, sourceStateKey, constraintsPath } = workspace;
   const source = topSource?.content ?? "";
   const selectedBoardId = manifest.boardId;
   const [inputs, setInputs] = useState<Record<string, boolean>>({ KEY0: true, KEY1: true, KEY2: true, KEY3: true });
@@ -91,10 +92,13 @@ export default function App() {
   const [inspectorSearch, setInspectorSearch] = useState("");
   const [bottomTab, setBottomTab] = useState<BottomTab>("waveform");
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false);
   const [projectDialog, setProjectDialog] = useState<ProjectDialog>(() => isDesktopApp() && !project.legacyRecovered ? "new" : null);
   const [projectTemplates, setProjectTemplates] = useState<ProjectTemplate[]>([]);
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [projectBusy, setProjectBusy] = useState(false);
+  const [projectParent, setProjectParent] = useState(() => localStorage.getItem(projectParentKey) ?? "");
+  const [recentProjects, setRecentProjects] = useState(loadRecentProjects);
   const [paneSizes, setPaneSizes] = useState<PaneSizes>(() => loadStored("logicboard.paneSizes", defaultPaneSizes));
   const [collapsed, setCollapsed] = useState<CollapsedPanes>(() => loadStored("logicboard.collapsedPanes.v2", defaultCollapsed));
   const [waveform, setWaveform] = useState<WaveSample[]>([]);
@@ -184,6 +188,14 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem("logicboard.paneSizes", JSON.stringify(paneSizes)); }, [paneSizes]);
   useEffect(() => { localStorage.setItem("logicboard.collapsedPanes.v2", JSON.stringify(collapsed)); }, [collapsed]);
+  useEffect(() => { localStorage.setItem(recentProjectsKey, JSON.stringify(recentProjects)); }, [recentProjects]);
+  useEffect(() => { if (projectParent) localStorage.setItem(projectParentKey, projectParent); }, [projectParent]);
+  useEffect(() => {
+    if (projectDialog !== "new" || !isDesktopApp()) return;
+    void resolveProjectParent(projectParent || undefined)
+      .then(({ parentPath: resolved }) => setProjectParent(resolved))
+      .catch((error) => setRuntimeProblems([String(error)]));
+  }, [projectDialog]);
   useEffect(() => {
     if (!isDesktopApp()) return;
     void listTemplates().then(setProjectTemplates).catch((error) => setRuntimeProblems([String(error)]));
@@ -255,15 +267,21 @@ export default function App() {
     setSimPace(1);
   };
 
-  const reportProjectError = (error: unknown) => {
+  const reportProjectError = (error: unknown, blocking = true) => {
     setRuntimeProblems([String(error)]);
     setBottomTab("problems");
-    void showProjectError(error, t("project.error.title"));
+    if (blocking) void showProjectError(error, t("project.error.title"));
+  };
+
+  const rememberProject = (loaded: LoadedProject) => {
+    setRecentProjects((current) => addRecentProject(current, loaded));
+    setProjectParent(parentPath(loaded.rootPath));
   };
 
   const replaceProject = (loaded: LoadedProject) => {
     reset();
     load(loaded);
+    rememberProject(loaded);
     setProjectDialog(null);
     setProjectMenuOpen(false);
     setAnalysisProblems([]);
@@ -278,16 +296,24 @@ export default function App() {
     }
     setProjectBusy(true);
     try {
+      const validationProblems = validateProjectManifest(manifest, project.sources);
+      if (validationProblems.length) {
+        reportProjectError(validationProblems.join("\n"), false);
+        return false;
+      }
       const payload = { manifest, sources: project.sources };
       const loaded = project.rootPath && !saveAs
         ? await saveProject(project.rootPath, payload)
         : await (async () => {
-          const parentPath = await chooseProjectFolder();
-          if (!parentPath) return null;
-          return saveProjectAs(parentPath, projectFolderName(manifest.name), payload);
+          const resolved = await resolveProjectParent(projectParent || undefined);
+          const selectedParent = await chooseProjectFolder(resolved.parentPath);
+          if (!selectedParent) return null;
+          setProjectParent(selectedParent);
+          return saveProjectAs(selectedParent, projectFolderName(manifest.name), payload);
         })();
       if (!loaded) return false;
       markSaved(loaded);
+      rememberProject(loaded);
       setRuntimeProblems([]);
       return true;
     } catch (error) {
@@ -300,6 +326,7 @@ export default function App() {
 
   const runProjectAction = (action: () => Promise<void>) => {
     setProjectMenuOpen(false);
+    setProjectSwitcherOpen(false);
     if (projectDirty) {
       pendingProjectActionRef.current = action;
       setUnsavedOpen(true);
@@ -311,7 +338,7 @@ export default function App() {
   const openExistingProject = () => runProjectAction(async () => {
     setProjectBusy(true);
     try {
-      const projectPath = await chooseProjectFolder();
+      const projectPath = await chooseProjectFolder(projectParent || undefined);
       if (!projectPath) return;
       replaceProject(await openProject(projectPath));
     } catch (error) {
@@ -321,20 +348,42 @@ export default function App() {
     }
   });
 
-  const createNewProject = (name: string, folderName: string, templateId: string) => {
-    setProjectDialog(null);
-    runProjectAction(async () => {
+  const openRecentProject = (projectPath: string) => runProjectAction(async () => {
+    if (project.rootPath?.toLocaleLowerCase() === projectPath.toLocaleLowerCase()) return;
     setProjectBusy(true);
     try {
-      const parentPath = await chooseProjectFolder();
-      if (!parentPath) return;
-      replaceProject(await createProject(parentPath, folderName, templateId, name));
+      replaceProject(await openProject(projectPath));
     } catch (error) {
       reportProjectError(error);
     } finally {
       setProjectBusy(false);
     }
-    });
+  });
+
+  const showNewProject = () => runProjectAction(async () => {
+    setProjectDialog("new");
+  });
+
+  const createNewProject = async (name: string, folderName: string, templateId: string, parent: string) => {
+    setProjectDialog(null);
+    setProjectBusy(true);
+    try {
+      replaceProject(await createProject(parent, folderName, templateId, name));
+    } catch (error) {
+      reportProjectError(error);
+    } finally {
+      setProjectBusy(false);
+    }
+  };
+
+  const browseProjectParent = async () => {
+    try {
+      const resolved = await resolveProjectParent(projectParent || undefined);
+      const selected = await chooseProjectFolder(resolved.parentPath);
+      if (selected) setProjectParent(selected);
+    } catch (error) {
+      reportProjectError(error);
+    }
   };
 
   const continuePendingAction = async (decision: "save" | "discard") => {
@@ -649,8 +698,7 @@ export default function App() {
 
   const fileName = (path: string) => path.split("/").at(-1) ?? path;
   const activeContent = activeIsConstraints ? constraints : activeSource?.content ?? "";
-  const activeFileName = activeIsConstraints ? constraintsPath : fileName(activeSource?.path ?? "");
-  const editorTabs = [
+  const availableEditorTabs = [
     ...project.sources.map((item) => ({
       path: item.path,
       name: fileName(item.path),
@@ -658,6 +706,9 @@ export default function App() {
     })),
     { path: constraintsPath, name: constraintsPath, readOnly: true }
   ];
+  const editorTabs = project.openPaths
+    .map((path) => availableEditorTabs.find((tab) => tab.path === path))
+    .filter((tab): tab is NonNullable<typeof tab> => Boolean(tab));
   const workspaceStyle = {
     "--explorer-width": `${collapsed.explorer ? 34 : paneSizes.explorer}px`,
     "--editor-width": `${paneSizes.editor}px`,
@@ -675,13 +726,15 @@ export default function App() {
     ? t("clock.tooltip", { simulation: clockNotice.simulation, physical: clockNotice.physical, pace: paceLabel })
     : "";
 
-  return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); }}>
+  return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); if (projectSwitcherOpen) setProjectSwitcherOpen(false); }}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark"><Activity size={19} /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
       <div className="project-control" onClick={(event) => event.stopPropagation()}>
-        <button className="project-button" disabled={projectBusy} onClick={() => setProjectMenuOpen((open) => !open)}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{manifest.name}{projectDirty ? " •" : ""}</b></div><ChevronDown size={14} /></button>
+        <button className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{manifest.name}{projectDirty ? " •" : ""}</b></div><ChevronDown size={14} /></button>
+        {projectSwitcherOpen && <ProjectSwitcher currentPath={project.rootPath} recentProjects={recentProjects} onSelect={(path) => void openRecentProject(path)} />}
+        <button className="project-actions-button" title={t("project.actions")} aria-label={t("project.actions")} onClick={() => { setProjectSwitcherOpen(false); setProjectMenuOpen((open) => !open); }}><MoreHorizontal size={17} /></button>
         {projectMenuOpen && <ProjectMenu
-          onNew={() => { setProjectMenuOpen(false); setProjectDialog("new"); }}
+          onNew={() => { setProjectMenuOpen(false); showNewProject(); }}
           onOpen={() => { setProjectMenuOpen(false); void openExistingProject(); }}
           onSaveAs={() => { setProjectMenuOpen(false); void persistProject(true); }}
           onSettings={() => { setProjectMenuOpen(false); setProjectDialog("project-settings"); }}
@@ -689,7 +742,7 @@ export default function App() {
       </div>
       <div className="top-spacer" />
       <div className={`status ${isCompiling ? "compiling" : simState}`}><i />{statusLabel}</div>
-      <button className="icon-button" disabled={!projectDirty || projectBusy} title={t("project.save.title")} onClick={() => void persistProject()}><Save size={17} /></button>
+      <button className="icon-button" disabled={projectBusy || (Boolean(project.rootPath) && !projectDirty)} title={t("project.save.title")} onClick={() => void persistProject()}><Save size={17} /></button>
       <button className="icon-button" title={t("settings.title")} onClick={() => setProjectDialog("application-settings")}><Settings2 size={17} /></button>
     </header>
 
@@ -738,16 +791,15 @@ export default function App() {
       <EditorPanel
         tabs={editorTabs}
         activePath={project.activePath}
-        activeFileName={activeFileName}
         activeContent={activeContent}
         readOnly={activeIsConstraints}
         onSelect={setActivePath}
+        onClose={closePath}
         onChange={updateActiveContent}
       />
       <div className="resize-handle vertical editor-handle" title={t("resize.editor")} onPointerDown={(event) => startResize("editor", event)} onDoubleClick={() => resetPane("editor")} />
 
       <section className="board-panel">
-        <div className="section-title"><div><span>{t("board.title")}</span><small>{t("board.instructions")}</small></div></div>
         <BoardView
           board={selectedBoard}
           expandedAssignments={expandedAssignments}
@@ -803,9 +855,10 @@ export default function App() {
     />}
     {projectDialog === "new" && <NewProjectDialog
       templates={projectTemplates}
+      parentPath={projectParent}
       onCancel={() => setProjectDialog(null)}
-      onOpen={() => { setProjectDialog(null); void openExistingProject(); }}
-      onCreate={(name, folderName, templateId) => void createNewProject(name, folderName, templateId)}
+      onBrowse={() => void browseProjectParent()}
+      onCreate={(name, folderName, templateId, parent) => void createNewProject(name, folderName, templateId, parent)}
     />}
     {projectDialog === "project-settings" && <ProjectSettingsDialog
       name={manifest.name}
@@ -819,6 +872,7 @@ export default function App() {
     {projectDialog === "application-settings" && <ApplicationSettingsDialog onCancel={() => setProjectDialog(null)} />}
     {unsavedOpen && <UnsavedChangesDialog
       projectName={manifest.name}
+      saveAs={!project.rootPath}
       onSave={() => void continuePendingAction("save")}
       onDiscard={() => void continuePendingAction("discard")}
       onCancel={() => { pendingProjectActionRef.current = null; setUnsavedOpen(false); }}

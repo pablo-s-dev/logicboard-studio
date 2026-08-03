@@ -1,9 +1,25 @@
-import { FolderOpen, FolderPlus, Save, Settings2 } from "lucide-react";
+import { Check, FolderOpen, FolderPlus, Save, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { BoardDefinition } from "../../types";
 import type { ProjectTemplate } from "../../projects/model";
 import { projectFolderName } from "../../projects/api";
 import { useI18n } from "../../i18n";
+import type { RecentProject } from "../../projects/recent";
+
+export function ProjectSwitcher({ currentPath, recentProjects, onSelect }: {
+  currentPath: string | null;
+  recentProjects: RecentProject[];
+  onSelect: (path: string) => void;
+}) {
+  const { t } = useI18n();
+  return <div className="project-switcher" onClick={(event) => event.stopPropagation()}>
+    <div className="project-switcher-heading">{t("project.recent")}</div>
+    {recentProjects.length ? recentProjects.map((project) => <button key={project.rootPath} className={currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? "current" : ""} onClick={() => onSelect(project.rootPath)}>
+      <span>{currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? <Check size={13} /> : <FolderOpen size={13} />}</span>
+      <div><b>{project.name}</b><small>{project.rootPath}</small></div>
+    </button>) : <p>{t("project.recent.empty")}</p>}
+  </div>;
+}
 
 export function ProjectMenu({ onNew, onOpen, onSaveAs, onSettings }: {
   onNew: () => void;
@@ -12,7 +28,7 @@ export function ProjectMenu({ onNew, onOpen, onSaveAs, onSettings }: {
   onSettings: () => void;
 }) {
   const { t } = useI18n();
-  return <div className="project-menu" onClick={(event) => event.stopPropagation()}>
+  return <div className="project-menu project-actions-menu" onClick={(event) => event.stopPropagation()}>
     <button onClick={onNew}><FolderPlus size={14} /><span><b>{t("project.new")}</b><small>{t("project.new.help")}</small></span></button>
     <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t("project.open.help")}</small></span></button>
     <button onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t("project.saveAs.help")}</small></span></button>
@@ -27,11 +43,12 @@ const fallbackTemplates: ProjectTemplate[] = [
   { id: "four-digit-timer", name: "Four-digit timer", description: "Clocked timer with buttons, LEDs, and four seven-segment displays." }
 ];
 
-export function NewProjectDialog({ templates, onCancel, onOpen, onCreate }: {
+export function NewProjectDialog({ templates, parentPath, onCancel, onBrowse, onCreate }: {
   templates: ProjectTemplate[];
+  parentPath: string;
   onCancel: () => void;
-  onOpen: () => void;
-  onCreate: (name: string, folderName: string, templateId: string) => void;
+  onBrowse: () => void;
+  onCreate: (name: string, folderName: string, templateId: string, parentPath: string) => void;
 }) {
   const { t } = useI18n();
   const available = templates.length ? templates : fallbackTemplates;
@@ -47,13 +64,22 @@ export function NewProjectDialog({ templates, onCancel, onOpen, onCreate }: {
   return <Modal title={t("project.new.title")} onCancel={onCancel}>
     <label className="project-field">{t("project.name")}<input autoFocus value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
     <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
+    <label className="project-field">{t("project.location")}<div className="project-location"><input readOnly value={parentPath} /><button type="button" className="secondary" onClick={onBrowse}>{t("project.browse")}</button></div></label>
+    <p className="project-location-help">{t("project.location.help")}</p>
+    <div className="project-destination"><small>{t("project.destination")}</small><b>{joinDisplayPath(parentPath, folderName)}</b></div>
     <div className="template-grid">
       {available.map((template) => <button key={template.id} className={templateId === template.id ? "active" : ""} onClick={() => setTemplateId(template.id)}>
         <b>{t(`template.${template.id}.name`)}</b><span>{t(`template.${template.id}.description`)}</span>
       </button>)}
     </div>
-    <div className="modal-actions"><button className="secondary" onClick={onOpen}>{t("project.openExisting")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim()} onClick={() => onCreate(name.trim(), folderName.trim(), templateId)}>{t("project.chooseLocation")}</button></div>
+    <div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim() || !parentPath} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>
   </Modal>;
+}
+
+function joinDisplayPath(parentPath: string, folderName: string) {
+  if (!parentPath) return folderName;
+  const separator = parentPath.includes("\\") ? "\\" : "/";
+  return `${parentPath.replace(/[\\/]+$/, "")}${separator}${folderName}`;
 }
 
 export function ProjectSettingsDialog({ name, boardId, topEntity, boards, entityNames, onCancel, onSave }: {
@@ -77,8 +103,9 @@ export function ProjectSettingsDialog({ name, boardId, topEntity, boards, entity
   </Modal>;
 }
 
-export function UnsavedChangesDialog({ projectName, onSave, onDiscard, onCancel }: {
+export function UnsavedChangesDialog({ projectName, saveAs, onSave, onDiscard, onCancel }: {
   projectName: string;
+  saveAs?: boolean;
   onSave: () => void;
   onDiscard: () => void;
   onCancel: () => void;
@@ -86,7 +113,7 @@ export function UnsavedChangesDialog({ projectName, onSave, onDiscard, onCancel 
   const { t } = useI18n();
   return <Modal title={t("project.unsaved.title")} onCancel={onCancel}>
     <p className="modal-copy">{t("project.unsaved.question", { name: projectName })}</p>
-    <div className="modal-actions"><button className="danger" onClick={onDiscard}>{t("project.discard")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" onClick={onSave}>{t("common.save")}</button></div>
+    <div className="modal-actions"><button className="danger" onClick={onDiscard}>{t("project.discard")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" onClick={onSave}>{saveAs ? t("project.saveAs") : t("common.save")}</button></div>
   </Modal>;
 }
 

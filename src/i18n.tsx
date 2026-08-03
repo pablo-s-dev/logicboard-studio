@@ -29,8 +29,14 @@ const ptBR: Record<string, string> = {
   "project.new.title": "Novo projeto LogicBoard",
   "project.name": "Nome do projeto",
   "project.folderName": "Nome da pasta",
-  "project.openExisting": "Abrir existente",
-  "project.chooseLocation": "Escolher local…",
+  "project.location": "Diretório de projetos VHDL",
+  "project.browse": "Procurar…",
+  "project.location.help": "Uma nova subpasta será criada dentro do diretório escolhido.",
+  "project.destination": "Projeto será criado em",
+  "project.create": "Criar projeto",
+  "project.actions": "Ações do projeto",
+  "project.recent": "PROJETOS RECENTES",
+  "project.recent.empty": "Nenhum projeto recente.",
   "project.targetBoard": "Placa de destino",
   "project.topEntity": "Entidade principal",
   "project.unsaved.title": "Alterações não salvas",
@@ -87,6 +93,8 @@ const ptBR: Record<string, string> = {
   "board.mapped": "{{label}} → {{port}} ({{pin}}). {{instruction}}.",
   "editor.generatedView": "Visualização das restrições geradas",
   "editor.source": "Editor de código-fonte VHDL",
+  "editor.closeTab": "Fechar {{name}}",
+  "editor.empty": "Selecione um arquivo no Explorador para abrir o editor.",
   "inspector.title": "Inspetor",
   "inspector.expand": "Expandir inspetor",
   "inspector.collapse": "Recolher inspetor",
@@ -169,6 +177,19 @@ const enUS: Record<string, string> = {
   "bottom.expand": "Expand bottom panel", "bottom.collapse": "Collapse bottom panel", "bottom.sample": "Sample", "bottom.compilation": "Compilation", "bottom.problems": "Problems", "bottom.noCapture": "No capture", "bottom.noCompilation": "No compilation yet. Press Run to analyze and start simulation.", "bottom.noProblems": "No problems reported.", "wave.ready": "Sample capture is ready", "wave.ready.help": "Run the simulation to capture the current mapped signal values.", "wave.current": "Current sample", "wave.low": "0 low", "wave.high": "1 high", "wave.showAll": "Show all", "wave.hide": "Hide {{port}}", "wave.allHidden": "All mapped signals are hidden.",
   "compile.start": "Starting analysis...", "compile.blocked": "Analysis blocked. See Problems for details.", "compile.preview": "Preview analysis passed. GHDL analysis runs in the Tauri desktop app.", "compile.mappingWarning": "Mapping warning: {{message}}", "compile.success": "GHDL analysis completed successfully.", "compile.failed": "GHDL analysis failed. See Problems for details.", "simulation.success": "GHDL simulation completed successfully through {{time}}.", "simulation.notRunning": "Simulation session is not running.", "simulation.stopped": "Simulation session stopped: {{message}}", "pace.behind": "Behind: {{pace}}x", "pace.effective": "Effective pace: ~{{pace}}x", "pace.adjust": "Adjust clock constants before running.", "clock.tooltip": "Interactive simulation uses {{simulation}} board clocks.\nIf your VHDL uses hardware clock constants such as 50_000_000, adjust them for simulation, e.g. 1_000.\n{{physical}} · Sim clock: {{simulation}} · {{pace}}", "clock.hardware": "hardware", "resize.explorer": "Drag to resize explorer. Double-click to reset.", "resize.editor": "Drag to resize editor. Double-click to reset.", "resize.inspector": "Drag to resize inspector. Double-click to reset.", "resize.bottom": "Drag to resize bottom panel. Double-click to reset."
 };
+
+Object.assign(enUS, {
+  "editor.closeTab": "Close {{name}}",
+  "editor.empty": "Select a file in Explorer to open the editor.",
+  "project.location": "VHDL projects directory",
+  "project.browse": "Browse…",
+  "project.location.help": "A new subfolder will be created inside the selected directory.",
+  "project.destination": "Project will be created at",
+  "project.create": "Create project",
+  "project.actions": "Project actions",
+  "project.recent": "RECENT PROJECTS",
+  "project.recent.empty": "No recent projects."
+});
 
 const messages: Record<Language, Record<string, string>> = { "pt-BR": ptBR, "en-US": enUS };
 export const languageStorageKey = "logicboard.language";
