@@ -10,7 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{ "title": "LogicBoard Studio", "width": 1500, "height": 920, "minWidth": 1100, "minHeight": 720 }],
+    "windows": [{ "title": "LogicBoard Studio", "width": 1500, "height": 920, "minWidth": 1100, "minHeight": 720, "maximized": true }],
     "security": { "csp": null }
   },
   "bundle": {
