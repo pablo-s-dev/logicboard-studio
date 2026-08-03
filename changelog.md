@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Changed the desktop window to start maximized.
 - Changed timed samples to use one consistent millisecond display and removed the duplicate time from the bottom-panel header.
 - Replaced text-character collapse affordances with consistent chevron icons throughout the workspace.
+- Compacted the four seven-segment cards and placed their group beside the clock group on the board's first row.
 
 ### Fixed
 
