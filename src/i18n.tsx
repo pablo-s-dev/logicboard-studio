@@ -165,10 +165,33 @@ const ptBR: Record<string, string> = {
   "wave.allHidden": "Todos os sinais mapeados estão ocultos.",
   "compile.start": "Iniciando análise...",
   "compile.blocked": "Análise bloqueada. Consulte Problemas para obter detalhes.",
-  "compile.preview": "A análise do preview passou. A análise GHDL é executada no aplicativo desktop Tauri.",
+  "compile.preview": "Pré-análise estrutural concluída. Abra o aplicativo desktop para executar a análise completa com o GHDL.",
   "compile.mappingWarning": "Aviso de mapeamento: {{message}}",
   "compile.success": "Análise GHDL concluída com sucesso.",
   "compile.failed": "A análise GHDL falhou. Consulte Problemas para obter detalhes.",
+  "compile.report.status.running": "Analisando projeto",
+  "compile.report.status.success": "Projeto pronto para simulação",
+  "compile.report.status.preview": "Pré-análise local concluída",
+  "compile.report.status.blocked": "Análise bloqueada",
+  "compile.report.status.failed": "Falha na análise",
+  "compile.report.previewScope": "Pré-análise estrutural do preview — sem executar o GHDL",
+  "compile.report.desktopScope": "Análise completa executada localmente pelo GHDL",
+  "compile.report.previewEngine": "Validador do preview",
+  "compile.report.engine": "Motor",
+  "compile.report.target": "Alvo",
+  "compile.report.interface": "Interface",
+  "compile.report.simulation": "Modelo",
+  "compile.report.ports": "{{inputs}} entradas · {{outputs}} saídas",
+  "compile.report.assignments": "{{count}} pinos atribuídos",
+  "compile.report.combinational": "Combinacional",
+  "compile.report.clocked": "Com clock · {{clocks}}",
+  "compile.report.noTime": "Sem eixo de tempo artificial",
+  "compile.report.timeShown": "A simulação exibirá tempo",
+  "compile.report.pending": "em andamento",
+  "compile.report.duration": "{{duration}} ms",
+  "compile.report.sources": "Fontes analisadas ({{count}})",
+  "compile.report.lines": "{{count}} linhas",
+  "compile.report.output": "Saída e diagnósticos",
   "simulation.success": "Simulação GHDL concluída com sucesso até {{time}}.",
   "simulation.notRunning": "A sessão de simulação não está em execução.",
   "simulation.stopped": "Sessão de simulação encerrada: {{message}}",
@@ -194,8 +217,16 @@ const enUS: Record<string, string> = {
   "editor.generatedView": "Generated constraints view", "editor.source": "VHDL source editor", "inspector.title": "Inspector", "inspector.expand": "Expand inspector", "inspector.collapse": "Collapse inspector", "inspector.assignments": "Assignments", "inspector.ports": "Ports", "inspector.mapper": "Mapper", "inspector.filter.mapper": "Filter endpoints or ports", "inspector.filter.assignments": "Filter assignments", "inspector.filter.ports": "Filter entity ports", "inspector.summary.mapper": "BOARD MAPPER", "inspector.summary.assignments": "ASSIGNED PINS", "inspector.summary.ports": "ENTITY PORTS", "inspector.none.assignments": "No assignments found.", "inspector.none.ports": "No ports found.", "inspector.none.endpoints": "No board endpoints found.", "inspector.pinUnknown": "pin unknown", "inspector.notMapped": "not mapped", "inspector.remove": "Remove {{port}}", "inspector.vector": "Vector", "inspector.chooseVector": "Choose compatible vector", "inspector.choosePort": "Choose port", "inspector.clearVector": "Clear vector assignment", "inspector.clearPin": "Clear pin assignment",
   "mapping.choosePort": "CHOOSE ENTITY PORT", "mapping.search": "Search entity ports", "mapping.noTarget": "No compatible target", "mapping.noVectors": "No compatible {{direction}} vectors", "mapping.noPorts": "No compatible {{direction}} ports", "mapping.clear": "Clear assignment", "mapping.pins": "{{count}} pins", "mapping.status.mapped": "mapped", "mapping.status.unmapped": "unmapped", "mapping.status.partial": "partial",
   "bottom.expand": "Expand bottom panel", "bottom.collapse": "Collapse bottom panel", "bottom.sample": "Sample", "bottom.compilation": "Compilation", "bottom.problems": "Problems", "bottom.noCapture": "No capture", "bottom.noCompilation": "No compilation yet. Press Run to analyze and start simulation.", "bottom.noProblems": "No problems reported.", "wave.ready": "Sample capture is ready", "wave.ready.help": "Run the simulation to capture the current mapped signal values.", "wave.current": "Current sample", "wave.combinational": "Current combinational state", "wave.lowCount": "{{count}} at level 0", "wave.highCount": "{{count}} at level 1",
-  "compile.start": "Starting analysis...", "compile.blocked": "Analysis blocked. See Problems for details.", "compile.preview": "Preview analysis passed. GHDL analysis runs in the Tauri desktop app.", "compile.mappingWarning": "Mapping warning: {{message}}", "compile.success": "GHDL analysis completed successfully.", "compile.failed": "GHDL analysis failed. See Problems for details.", "simulation.success": "GHDL simulation completed successfully through {{time}}.", "simulation.notRunning": "Simulation session is not running.", "simulation.stopped": "Simulation session stopped: {{message}}", "pace.behind": "Behind: {{pace}}x", "pace.effective": "Effective pace: ~{{pace}}x", "pace.adjust": "Adjust clock constants before running.", "clock.tooltip": "Interactive simulation uses {{simulation}} board clocks.\nIf your VHDL uses hardware clock constants such as 50_000_000, adjust them for simulation, e.g. 1_000.\n{{physical}} · Sim clock: {{simulation}} · {{pace}}", "clock.hardware": "hardware", "resize.explorer": "Drag to resize explorer. Double-click to reset.", "resize.editor": "Drag to resize editor. Double-click to reset.", "resize.inspector": "Drag to resize inspector. Double-click to reset.", "resize.bottom": "Drag to resize bottom panel. Double-click to reset."
+  "compile.start": "Starting analysis...", "compile.blocked": "Analysis blocked. See Problems for details.", "compile.preview": "Structural preflight completed. Open the desktop app to run the full GHDL analysis.", "compile.mappingWarning": "Mapping warning: {{message}}", "compile.success": "GHDL analysis completed successfully.", "compile.failed": "GHDL analysis failed. See Problems for details.", "simulation.success": "GHDL simulation completed successfully through {{time}}.", "simulation.notRunning": "The simulation session is not running.", "simulation.stopped": "Simulation session stopped: {{message}}", "pace.behind": "Behind: {{pace}}x", "pace.effective": "Effective pace: ~{{pace}}x", "pace.adjust": "Adjust clock constants before running.", "clock.tooltip": "Interactive simulation uses {{simulation}} board clocks.\nIf your VHDL uses hardware clock constants such as 50_000_000, adjust them for simulation, e.g. 1_000.\n{{physical}} · Sim clock: {{simulation}} · {{pace}}", "clock.hardware": "hardware", "resize.explorer": "Drag to resize explorer. Double-click to reset.", "resize.editor": "Drag to resize editor. Double-click to reset.", "resize.inspector": "Drag to resize inspector. Double-click to reset.", "resize.bottom": "Drag to resize bottom panel. Double-click to reset."
 };
+
+Object.assign(enUS, {
+  "compile.report.status.running": "Analyzing project", "compile.report.status.success": "Project ready for simulation", "compile.report.status.preview": "Local preflight completed", "compile.report.status.blocked": "Analysis blocked", "compile.report.status.failed": "Analysis failed",
+  "compile.report.previewScope": "Preview structural preflight — GHDL was not executed", "compile.report.desktopScope": "Full analysis executed locally by GHDL", "compile.report.previewEngine": "Preview validator",
+  "compile.report.engine": "Engine", "compile.report.target": "Target", "compile.report.interface": "Interface", "compile.report.simulation": "Model", "compile.report.ports": "{{inputs}} inputs · {{outputs}} outputs", "compile.report.assignments": "{{count}} assigned pins",
+  "compile.report.combinational": "Combinational", "compile.report.clocked": "Clocked · {{clocks}}", "compile.report.noTime": "No artificial time axis", "compile.report.timeShown": "Simulation will display time", "compile.report.pending": "in progress", "compile.report.duration": "{{duration}} ms",
+  "compile.report.sources": "Analyzed sources ({{count}})", "compile.report.lines": "{{count}} lines", "compile.report.output": "Output and diagnostics"
+});
 
 Object.assign(enUS, {
   "editor.closeTab": "Close {{name}}",

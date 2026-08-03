@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
     process::{Child, ChildStdin, ChildStdout, Command, Stdio},
     sync::Mutex,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
 mod projects;
@@ -19,6 +19,14 @@ const MAX_SESSION_STEP_NS: u64 = 250_000_000;
 struct VhdlSource {
     name: String,
     content: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AnalysisResult {
+    diagnostics: Vec<String>,
+    duration_ms: u64,
+    engine_version: String,
 }
 
 #[derive(Deserialize, Clone)]
@@ -165,6 +173,22 @@ fn run_ghdl(work: &Path, args: &[&str]) -> Result<Vec<String>, String> {
             messages.join("\n")
         })
     }
+}
+
+fn ghdl_version() -> Result<String, String> {
+    let output = Command::new(ghdl_path())
+        .arg("--version")
+        .output()
+        .map_err(|e| format!("GHDL is not available: {e}"))?;
+    if !output.status.success() {
+        return Err("Could not determine the installed GHDL version.".into());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .unwrap_or("GHDL")
+        .trim()
+        .to_owned())
 }
 
 fn report_value(line: &str) -> Option<(String, bool)> {
@@ -487,7 +511,7 @@ fn interactive_testbench_source(
 }
 
 #[tauri::command]
-fn analyze_project(sources: Vec<VhdlSource>) -> Result<Vec<String>, String> {
+fn analyze_project(sources: Vec<VhdlSource>) -> Result<AnalysisResult, String> {
     if sources.is_empty() {
         return Err("The project has no VHDL source files.".into());
     }
@@ -498,13 +522,20 @@ fn analyze_project(sources: Vec<VhdlSource>) -> Result<Vec<String>, String> {
     let work = std::env::temp_dir().join(format!("logicboard-{stamp}"));
     fs::create_dir_all(&work).map_err(|e| format!("Could not create GHDL work directory: {e}"))?;
 
+    let started = Instant::now();
     let result = (|| {
+        let engine_version = ghdl_version()?;
         let files = stage_sources(&work, sources)?;
         let args: Vec<String> = std::iter::once("-a".to_owned())
             .chain(std::iter::once("--std=08".to_owned()))
             .chain(files.iter().map(|path| path.to_string_lossy().to_string()))
             .collect();
-        run_ghdl(&work, &args.iter().map(String::as_str).collect::<Vec<_>>())
+        let diagnostics = run_ghdl(&work, &args.iter().map(String::as_str).collect::<Vec<_>>())?;
+        Ok(AnalysisResult {
+            diagnostics,
+            duration_ms: started.elapsed().as_millis().min(u64::MAX as u128) as u64,
+            engine_version,
+        })
     })();
     let _ = fs::remove_dir_all(&work);
     result

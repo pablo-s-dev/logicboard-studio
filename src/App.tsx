@@ -15,6 +15,7 @@ import { BoardView } from "./components/board/BoardView";
 import { EditorPanel } from "./components/panels/EditorPanel";
 import { InspectorPanel, type InspectorView } from "./components/panels/InspectorPanel";
 import { LogPanel } from "./components/panels/LogPanel";
+import { CompilationPanel, type CompilationReport } from "./components/panels/CompilationPanel";
 import { Waveform } from "./components/panels/Waveform";
 import {
   buildSimulationClocks, effectivePace, formatFrequency, nsPerMs,
@@ -43,6 +44,7 @@ type SimulationInputEvent = { timeNs: number; portId: string; value: boolean };
 type SimulationSample = { timeNs: number; outputs: Record<string, boolean> };
 type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationSample[]; diagnostics: string[]; simulatedTimeNs: number };
 type SimulationSessionResult = SimulationResult & { sessionId: string };
+type AnalysisResult = { diagnostics: string[]; durationMs: number; engineVersion: string };
 type ProjectDialog = "new" | "project-settings" | "application-settings" | null;
 
 const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: minimumBottomPaneHeight };
@@ -112,6 +114,7 @@ export default function App() {
   const [analysisProblems, setAnalysisProblems] = useState<string[]>([]);
   const [runtimeProblems, setRuntimeProblems] = useState<string[]>([]);
   const [compilationLog, setCompilationLog] = useState<string[]>([]);
+  const [compilationReport, setCompilationReport] = useState<CompilationReport | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simPace, setSimPace] = useState(1);
@@ -295,6 +298,7 @@ export default function App() {
     setAnalysisProblems([]);
     setRuntimeProblems([]);
     setCompilationLog([]);
+    setCompilationReport(null);
   };
 
   const persistProject = async (saveAs = false) => {
@@ -517,14 +521,31 @@ export default function App() {
   }, [localProjectProblems]);
 
   const compileProject = useCallback(async () => {
+    const startedAt = performance.now();
+    const report: CompilationReport = {
+      status: "running",
+      engine: isTauriApp() ? "GHDL" : t("compile.report.previewEngine"),
+      standard: "VHDL 2008",
+      projectName: manifest.name,
+      board: `${selectedBoard.name} · ${selectedBoard.device}`,
+      topEntity,
+      sources: sourcePayloads.map((item) => ({ path: item.name, lines: item.content.split(/\r?\n/).length })),
+      inputPorts: ports.filter((port) => port.direction === "in").length,
+      outputPorts: ports.filter((port) => port.direction === "out").length,
+      assignments: expandedAssignments.length,
+      clocks: simulationClocks.map((clock) => `${clock.label} ${formatFrequency(clock.simulationFrequencyHz)}`),
+      preview: !isTauriApp()
+    };
     setIsCompiling(true);
     setRuntimeProblems([]);
     setCompilationLog([t("compile.start")]);
+    setCompilationReport(report);
     setBottomTab("compilation");
 
     const localProblems = validateProject();
     if (localProblems.length) {
       setCompilationLog([t("compile.blocked")]);
+      setCompilationReport({ ...report, status: "blocked", durationMs: performance.now() - startedAt });
       setBottomTab("problems");
       setIsCompiling(false);
       return false;
@@ -533,21 +554,24 @@ export default function App() {
     try {
       if (!isTauriApp()) {
         setCompilationLog([t("compile.preview"), ...mappingProblems.map((item) => t("compile.mappingWarning", { message: item }))]);
+        setCompilationReport({ ...report, status: "success", durationMs: performance.now() - startedAt });
         return true;
       }
       const { invoke } = await import("@tauri-apps/api/core");
-      const result = await invoke<string[]>("analyze_project", { sources: sourcePayloads });
-      setCompilationLog([...(result.length ? result : [t("compile.success")]), ...mappingProblems.map((item) => t("compile.mappingWarning", { message: item }))]);
+      const result = await invoke<AnalysisResult>("analyze_project", { sources: sourcePayloads });
+      setCompilationLog([...(result.diagnostics.length ? result.diagnostics : [t("compile.success")]), ...mappingProblems.map((item) => t("compile.mappingWarning", { message: item }))]);
+      setCompilationReport({ ...report, status: "success", durationMs: result.durationMs, engineVersion: result.engineVersion });
       return true;
     } catch (error) {
       setRuntimeProblems([String(error)]);
       setCompilationLog([t("compile.failed")]);
+      setCompilationReport({ ...report, status: "failed", durationMs: performance.now() - startedAt });
       setBottomTab("problems");
       return false;
     } finally {
       setIsCompiling(false);
     }
-  }, [mappingProblems, sourcePayloads, t, validateProject]);
+  }, [expandedAssignments.length, manifest.name, mappingProblems, ports, selectedBoard.device, selectedBoard.name, simulationClocks, sourcePayloads, t, topEntity, validateProject]);
 
   const stopSimulation = useCallback(() => {
     void stopActiveSimulationSession();
@@ -869,7 +893,7 @@ export default function App() {
         {!collapsed.bottom && (bottomTab === "waveform"
           ? <Waveform samples={waveform} assignments={expandedAssignments} timed={isClockedSimulation} />
           : bottomTab === "compilation"
-            ? <LogPanel lines={compilationLog} empty={t("bottom.noCompilation")} />
+            ? <CompilationPanel report={compilationReport} lines={compilationLog} empty={t("bottom.noCompilation")} />
             : <LogPanel lines={problems} empty={t("bottom.noProblems")} problem />)}
       </section>
       </> : <ProjectWelcome templates={projectTemplates} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} />}
