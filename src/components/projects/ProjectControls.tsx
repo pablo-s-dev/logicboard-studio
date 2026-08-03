@@ -117,6 +117,18 @@ export function UnsavedChangesDialog({ projectName, saveAs, onSave, onDiscard, o
   </Modal>;
 }
 
+export function RemoveAssignmentDialog({ label, onConfirm, onCancel }: {
+  label: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+  return <Modal title={t("assignment.remove.title")} onCancel={onCancel}>
+    <p className="modal-copy">{t("assignment.remove.question", { label })}</p>
+    <div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="danger" onClick={onConfirm}>{t("assignment.remove.confirm")}</button></div>
+  </Modal>;
+}
+
 function Modal({ title, children, onCancel }: { title: string; children: React.ReactNode; onCancel: () => void }) {
   const { t } = useI18n();
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>

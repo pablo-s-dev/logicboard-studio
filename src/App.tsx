@@ -6,9 +6,9 @@ import {
 } from "lucide-react";
 import { boards, cycloneII } from "./board";
 import {
-  applyAssignment, expandAssignments, generateQsf, validateAssignments
+  applyAssignment, expandAssignments, generateQsf, removeAssignmentTarget, validateAssignments
 } from "./assignments/model";
-import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, ProjectSwitcher, UnsavedChangesDialog } from "./components/projects/ProjectControls";
+import { NewProjectDialog, ProjectMenu, ProjectSettingsDialog, ProjectSwitcher, RemoveAssignmentDialog, UnsavedChangesDialog } from "./components/projects/ProjectControls";
 import { ApplicationSettingsDialog } from "./components/settings/ApplicationSettingsDialog";
 import { AssignmentMenu } from "./components/panels/AssignmentMenu";
 import { BoardView } from "./components/board/BoardView";
@@ -97,6 +97,7 @@ export default function App() {
   const [projectTemplates, setProjectTemplates] = useState<ProjectTemplate[]>([]);
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [projectBusy, setProjectBusy] = useState(false);
+  const [assignmentToRemove, setAssignmentToRemove] = useState<{ targetId: string; label: string } | null>(null);
   const [projectParent, setProjectParent] = useState(() => localStorage.getItem(projectParentKey) ?? "");
   const [recentProjects, setRecentProjects] = useState(loadRecentProjects);
   const [paneSizes, setPaneSizes] = useState<PaneSizes>(() => loadStored("logicboard.paneSizes", defaultPaneSizes));
@@ -430,10 +431,18 @@ export default function App() {
     setSignalSearch("");
   };
 
-  const clearAssignment = (targetId: string) => {
-    const childIds = selectedBoard.groups.find((group) => group.id === targetId)?.children.map((endpoint) => endpoint.id) ?? [];
-    setAssignments((old) => old.filter((assignment) => assignment.endpointId !== targetId && !childIds.includes(assignment.endpointId)));
+  const requestAssignmentRemoval = (targetId: string) => {
+    const group = selectedBoard.groups.find((item) => item.id === targetId);
+    const endpoint = selectedBoard.endpoints.find((item) => item.id === targetId);
+    const expanded = expandedAssignments.find((item) => item.endpointId === targetId);
+    setAssignmentToRemove({ targetId, label: expanded?.portId ?? endpoint?.label ?? group?.label ?? targetId });
     setContext(null);
+  };
+
+  const confirmAssignmentRemoval = () => {
+    if (!assignmentToRemove) return;
+    setAssignments((old) => removeAssignmentTarget(old, selectedBoard, ports, assignmentToRemove.targetId));
+    setAssignmentToRemove(null);
   };
 
   const togglePane = (pane: keyof CollapsedPanes) => setCollapsed((old) => ({ ...old, [pane]: !old[pane] }));
@@ -824,7 +833,7 @@ export default function App() {
         onSearch={setInspectorSearch}
         onToggle={() => togglePane("inspector")}
         onAssign={assign}
-        onClear={clearAssignment}
+        onClear={requestAssignmentRemoval}
       />
       <div className="resize-handle horizontal bottom-handle" title={t("resize.bottom")} onPointerDown={(event) => startResize("bottom", event)} onDoubleClick={() => resetPane("bottom")} />
 
@@ -851,7 +860,7 @@ export default function App() {
       onMode={(mode) => setContext((old) => old ? { ...old, mode } : old)}
       onSearch={setSignalSearch}
       onAssign={assign}
-      onClear={clearAssignment}
+      onClear={requestAssignmentRemoval}
     />}
     {projectDialog === "new" && <NewProjectDialog
       templates={projectTemplates}
@@ -876,6 +885,11 @@ export default function App() {
       onSave={() => void continuePendingAction("save")}
       onDiscard={() => void continuePendingAction("discard")}
       onCancel={() => { pendingProjectActionRef.current = null; setUnsavedOpen(false); }}
+    />}
+    {assignmentToRemove && <RemoveAssignmentDialog
+      label={assignmentToRemove.label}
+      onConfirm={confirmAssignmentRemoval}
+      onCancel={() => setAssignmentToRemove(null)}
     />}
   </div>;
 }
