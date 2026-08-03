@@ -16,4 +16,10 @@ describe("interface localization", () => {
   it("interpolates translated values", () => {
     expect(translate("pt-BR", "board.assignedPins", { count: 12 })).toBe("12 pinos físicos atribuídos");
   });
+
+  it("translates project directory and credits settings", () => {
+    expect(translate("pt-BR", "settings.projectDirectory")).toBe("Diretório padrão de projetos VHDL");
+    expect(translate("pt-BR", "settings.credits")).toBe("Créditos");
+    expect(translate("en-US", "board.group.HEXES")).toBe("Seven-segment displays");
+  });
 });
