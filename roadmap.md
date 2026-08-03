@@ -151,6 +151,8 @@ Planned commits:
 - [x] Keep Explorer metadata visible while its file tree scrolls independently.
 - [x] Prioritize a two-column board layout and a useful board-panel width.
 - [x] Add a VS Code-style activity bar and project hub.
+- [x] Toggle the active sidebar completely closed when its activity icon is selected again.
+- [x] Move Credits from Settings into a dedicated activity-bar view.
 - [x] Show a project welcome screen instead of silently loading a starter.
 - [x] Expose templates in project actions, the hub, and the empty recent-project list.
 - [x] Keep starter templates visible in the project switcher even when recent projects exist.
@@ -172,6 +174,8 @@ Planned commits:
 - [x] Show and edit the default VHDL projects directory in application settings.
 - [x] Add application credits with the developer name and portfolio.
 - [x] Hide the production Windows console window.
+- [x] Start the desktop application maximized.
+- [x] Keep board groups and individual devices at their intrinsic compact size.
 
 Planned commit:
 
@@ -191,7 +195,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 46 tests passing across ten test files.
+- `npm test`: 48 tests passing across eleven test files.
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 17 tests passing.
 - Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
 - `npm run build`: TypeScript and Vite production build passing.

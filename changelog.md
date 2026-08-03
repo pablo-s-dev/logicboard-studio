@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-03
+
+### Added
+
+- Added a dedicated Credits activity containing Pablo Santana de Oliveira and `pablosdev.portfolio.app`.
+- Added automated coverage for activity-bar selection, switching, and toggle-to-close behavior.
+
+### Changed
+
+- Changed the Explorer and Projects activity buttons to close the entire sidebar when selected again, matching the VS Code toggle behavior.
+- Moved Credits out of application settings and into the activity bar.
+- Changed board groups and individual devices to retain their intrinsic minimum size instead of stretching into available space.
+- Changed the four HEX displays to fixed compact `62 × 72 px` cards.
+- Changed the desktop window to start maximized.
+
 ## [0.5.0] - 2026-08-03
 
 ### Added
