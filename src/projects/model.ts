@@ -32,11 +32,16 @@ export interface ProjectTemplate {
   description: string;
 }
 
+export interface ProjectWorkspaceDefaults {
+  parentPath: string;
+}
+
 export interface ProjectState {
   rootPath: string | null;
   manifest: ProjectManifest;
   sources: ProjectSource[];
   activePath: string;
+  openPaths: string[];
   savedSnapshot: string | null;
   legacyRecovered: boolean;
 }
@@ -95,6 +100,7 @@ export function loadedProjectState(project: LoadedProject): ProjectState {
   return {
     ...project,
     activePath: project.sources[0]?.path ?? "",
+    openPaths: project.sources[0] ? [project.sources[0].path] : [],
     savedSnapshot: snapshot,
     legacyRecovered: false
   };
@@ -114,7 +120,15 @@ export function untitledProject(source = starterVhdl, assignments: Assignment[] 
     },
     sources: [{ path: "src/board_demo.vhd", content: source }],
     activePath: "src/board_demo.vhd",
-    savedSnapshot: null,
+    openPaths: ["src/board_demo.vhd"],
+    savedSnapshot: recovered ? null : projectSnapshot({
+      schemaVersion: projectSchemaVersion,
+      name,
+      boardId: cycloneII.id,
+      topEntity: "board_demo",
+      sources: ["src/board_demo.vhd"],
+      assignments: normalizeAssignments(assignments)
+    }, [{ path: "src/board_demo.vhd", content: source }]),
     legacyRecovered: recovered
   };
 }
@@ -146,6 +160,20 @@ export function projectEntityNames(sources: ProjectSource[]) {
 export function sourceContainingEntity(sources: ProjectSource[], entityName: string) {
   const target = entityName.toLowerCase();
   return sources.find((source) => parseEntityNames(source.content).some((name) => name.toLowerCase() === target));
+}
+
+export function reconcileTopEntity(manifest: ProjectManifest, sources: ProjectSource[]) {
+  const entities = projectEntityNames(sources);
+  const topStillExists = entities.some((entity) => entity.toLowerCase() === manifest.topEntity.toLowerCase());
+  return !topStillExists && entities.length === 1 ? { ...manifest, topEntity: entities[0] } : manifest;
+}
+
+export function closeOpenPath(openPaths: string[], activePath: string, path: string) {
+  const index = openPaths.indexOf(path);
+  if (index < 0) return { openPaths, activePath };
+  const nextOpenPaths = openPaths.filter((item) => item !== path);
+  if (activePath !== path) return { openPaths: nextOpenPaths, activePath };
+  return { openPaths: nextOpenPaths, activePath: nextOpenPaths[index] ?? nextOpenPaths[index - 1] ?? "" };
 }
 
 export function validateProjectManifest(manifest: ProjectManifest, sources: ProjectSource[]) {

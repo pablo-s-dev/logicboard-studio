@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Assignment } from "../types";
 import {
-  isProjectDirty, loadedProjectState, projectEntityNames, projectSnapshot, sourceContainingEntity,
+  closeOpenPath, isProjectDirty, loadedProjectState, projectEntityNames, projectSnapshot, reconcileTopEntity, sourceContainingEntity,
   recoverLegacyProject
 } from "./model";
 import type { LoadedProject, ProjectManifest, ProjectState } from "./model";
@@ -39,13 +39,24 @@ export function useProjectWorkspace() {
     manifest: { ...current.manifest, ...update }
   }));
 
-  const setActivePath = (path: string) => setProject((current) => ({ ...current, activePath: path }));
+  const setActivePath = (path: string) => setProject((current) => ({
+    ...current,
+    activePath: path,
+    openPaths: current.openPaths.includes(path) ? current.openPaths : [...current.openPaths, path]
+  }));
+
+  const closePath = (path: string) => setProject((current) => {
+    const next = closeOpenPath(current.openPaths, current.activePath, path);
+    return next.openPaths === current.openPaths ? current : { ...current, ...next };
+  });
 
   const updateActiveContent = (content: string) => setProject((current) => {
     if (current.activePath === constraintsPath) return current;
+    const sources = current.sources.map((source) => source.path === current.activePath ? { ...source, content } : source);
     return {
       ...current,
-      sources: current.sources.map((source) => source.path === current.activePath ? { ...source, content } : source)
+      sources,
+      manifest: reconcileTopEntity(current.manifest, sources)
     };
   });
 
@@ -61,7 +72,8 @@ export function useProjectWorkspace() {
         ...saved,
         activePath: saved.sources.some((source) => source.path === current.activePath)
           ? current.activePath
-          : saved.activePath
+          : saved.activePath,
+        openPaths: current.openPaths.filter((path) => path === constraintsPath || saved.sources.some((source) => source.path === path))
       };
     });
   };
@@ -86,6 +98,7 @@ export function useProjectWorkspace() {
     topSource,
     entityNames,
     setActivePath,
+    closePath,
     updateActiveContent,
     load,
     markSaved,

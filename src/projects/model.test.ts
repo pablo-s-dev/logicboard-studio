@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  isProjectDirty, loadedProjectState, projectEntityNames, recoverLegacyProject,
-  shouldContinueProjectAction, sourceContainingEntity, sourcePayloads
+  closeOpenPath, isProjectDirty, loadedProjectState, projectEntityNames, reconcileTopEntity, recoverLegacyProject,
+  shouldContinueProjectAction, sourceContainingEntity, sourcePayloads, untitledProject
 } from "./model";
 import type { LoadedProject, ProjectState } from "./model";
 
@@ -57,5 +57,22 @@ describe("desktop project state", () => {
     expect(shouldContinueProjectAction("save", true)).toBe(true);
     expect(shouldContinueProjectAction("save", false)).toBe(false);
     expect(shouldContinueProjectAction("cancel")).toBe(false);
+  });
+
+  it("treats the untouched starter as clean while preserving recovered drafts", () => {
+    expect(isProjectDirty(untitledProject())).toBe(false);
+    expect(isProjectDirty(untitledProject("entity recovered is end entity;", [], true))).toBe(true);
+  });
+
+  it("closes only the editor view and selects the neighboring tab", () => {
+    expect(closeOpenPath(["a", "b", "c"], "b", "b")).toEqual({ openPaths: ["a", "c"], activePath: "c" });
+    expect(closeOpenPath(["a"], "a", "a")).toEqual({ openPaths: [], activePath: "" });
+  });
+
+  it("selects the only detected entity when the configured top disappears", () => {
+    const manifest = { ...loaded.manifest, topEntity: "missing" };
+    expect(reconcileTopEntity(manifest, loaded.sources).topEntity).toBe("top");
+    const multiple = [...loaded.sources, { path: "src/other.vhd", content: "entity other is end entity;" }];
+    expect(reconcileTopEntity(manifest, multiple)).toBe(manifest);
   });
 });
