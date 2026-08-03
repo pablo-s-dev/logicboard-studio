@@ -129,6 +129,19 @@ Planned commits:
 - [x] Test template loading, independent copies, reopening saved projects, and analyze every bundled VHDL source with GHDL.
 - [ ] Run the full frontend suite and Rust tests in CI.
 
+## Simulation and workspace polish
+
+- [x] Treat projects without mapped clocks as an untimed combinational state.
+- [x] Replace the ambiguous low/high legend with actual logical-level counts.
+- [x] Remove per-signal hiding from the current-sample panel.
+- [x] Confirm assignment removal and preserve the other bits of vector mappings.
+- [x] Keep the bottom panel inside the viewport and open it at minimum height.
+- [x] Keep Explorer metadata visible while its file tree scrolls independently.
+- [x] Prioritize a two-column board layout and a useful board-panel width.
+- [x] Add a VS Code-style activity bar and project hub.
+- [x] Show a project welcome screen instead of silently loading a starter.
+- [x] Expose templates in project actions, the hub, and the empty recent-project list.
+
 ## Desktop project experience
 
 - [x] Use `Documents/LogicBoard Projects` as the native default parent directory.
@@ -149,7 +162,7 @@ Planned commit:
 - [x] Add this implementation roadmap.
 - [x] Add `changelog.md` with an Unreleased section.
 - [x] Update the changelog with every user-visible code or documentation change in this delivery.
-- [ ] Move Unreleased entries into a dated version section when preparing a release.
+- [x] Move Unreleased entries into a dated version section when preparing a release.
 
 Planned commits:
 
@@ -158,7 +171,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 40 tests passing across seven test files.
+- `npm test`: 45 tests passing across ten test files.
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 17 tests passing.
 - Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
 - `npm run build`: TypeScript and Vite production build passing.

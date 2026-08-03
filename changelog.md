@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-02
+
+### Added
+
+- Added confirmation before removing granular or vector board assignments.
+- Added an untimed interactive state for combinational projects without mapped clocks.
+- Added a VS Code-style activity bar, project hub, and first-launch project welcome screen.
+- Added template shortcuts to project actions and to the recent-project selector when no recent projects exist.
+- Added automated coverage for vector-bit removal, logical-level counts, initial workspace selection, and viewport-aware bottom-panel limits.
+
+### Changed
+
+- Changed waveform status from an ambiguous value legend to actual counts of signals at logical levels 0 and 1.
+- Changed the bottom panel to open at its minimum height and preserve a usable upper workspace while resizing.
+- Changed the board to prioritize a two-column group layout and a minimum useful panel width.
+- Moved board mapping guidance below the functional schematic heading and removed the redundant interactive-board title.
+- Changed Explorer so its file tree scrolls independently while the configured top entity remains visible.
+- Changed first launch without legacy data to show project choices instead of opening an implicit starter project.
+
+### Removed
+
+- Removed the redundant target-device badge from the toolbar.
+- Removed controls for hiding individual signals from the current-sample panel.
+- Removed time and speed indicators from combinational projects where elapsed simulation time has no useful meaning.
+
+### Fixed
+
+- Fixed assignment deletion for bits expanded from a vector mapping while preserving the remaining mapped bits.
+- Fixed oversized bottom panels extending the document below the application viewport.
+- Fixed board groups wrapping to a new row even when a two-column arrangement fits.
+
 ## [0.3.0] - 2026-08-02
 
 ### Added
