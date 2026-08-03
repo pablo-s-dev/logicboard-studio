@@ -223,8 +223,8 @@ export default function App() {
 
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        const result = await invoke<string[]>("analyze_project", { sources: sourcePayloads });
-        if (analysisRevisionRef.current === revision) setAnalysisProblems(result);
+        const result = await invoke<AnalysisResult>("analyze_project", { sources: sourcePayloads });
+        if (analysisRevisionRef.current === revision) setAnalysisProblems(result.diagnostics);
       } catch (error) {
         if (analysisRevisionRef.current === revision) setAnalysisProblems([String(error)]);
       }
