@@ -6,6 +6,11 @@ import { useI18n } from "../../i18n";
 const lowColor = "#4bf0a5";
 const highColor = "#ff5c4f";
 
+export const formatSampleTime = (nanoseconds: number) => `${(nanoseconds / 1_000_000).toLocaleString(undefined, {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 3
+})} ms`;
+
 const uniqueRows = (assignments: ExpandedAssignment[]) => assignments.filter((assignment, index, array) =>
   array.findIndex((item) => item.endpointId === assignment.endpointId) === index
 );
@@ -32,7 +37,7 @@ export function Waveform({ samples, assignments, timed }: { samples: WaveSample[
     <div className="sample-toolbar">
       <div>
         <b>{t("wave.current")}</b>
-        <span>{timed ? `${sample.time} ns` : t("wave.combinational")}</span>
+        <span>{timed ? formatSampleTime(sample.time) : t("wave.combinational")}</span>
       </div>
       <div className="sample-legend">
         <span><i style={{ background: lowColor }} />{t("wave.lowCount", { count: levels.low })}</span>

@@ -362,7 +362,6 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .bottom-tabs button { display: flex; align-items: center; gap: 6px; }
 .bottom-tabs button i { font-style: normal; background: #293137; color: #9aa6ae; border-radius: 6px; padding: 0 4px; font-size: 7px; }
 .bottom-tabs > span { flex: 1; }
-.bottom-tabs small { color: #52616a; margin: 11px; font: 8px "IBM Plex Mono", monospace; }
 .empty-wave { flex: 1; display: flex; align-items: center; justify-content: center; color: #44525b; gap: 11px; }
 .empty-wave div { display: flex; flex-direction: column; gap: 4px; }
 .empty-wave b { font-size: 10px; color: #73818a; }
