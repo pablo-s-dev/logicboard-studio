@@ -45,6 +45,36 @@ export function applyAssignment(assignments: Assignment[], next: Assignment): As
   ];
 }
 
+export function removeAssignmentTarget(
+  assignments: Assignment[],
+  board: BoardDefinition,
+  ports: EntityPort[],
+  targetId: string
+): Assignment[] {
+  const group = findBoardGroup(board, targetId);
+  if (group) {
+    const childIds = new Set(group.children.map((endpoint) => endpoint.id));
+    return assignments.filter((assignment) =>
+      assignment.endpointId !== group.id && !childIds.has(assignment.endpointId)
+    );
+  }
+
+  const direct = assignments.find((assignment) => assignment.endpointId === targetId);
+  if (direct) return assignments.filter((assignment) => assignment.id !== direct.id);
+
+  const expanded = expandAssignments(assignments, board, ports);
+  const expandedTarget = expanded.find((assignment) => assignment.endpointId === targetId);
+  if (!expandedTarget) return assignments;
+
+  const source = assignments.find((assignment) => assignment.id === expandedTarget.assignmentId);
+  if (!source || source.kind !== "vector") return assignments;
+
+  const remainingBits = expanded
+    .filter((assignment) => assignment.assignmentId === source.id && assignment.endpointId !== targetId)
+    .map((assignment) => makeGranularAssignment(assignment.endpointId, assignment.portId));
+  return [...assignments.filter((assignment) => assignment.id !== source.id), ...remainingBits];
+}
+
 export function portVectors(ports: EntityPort[]): PortVector[] {
   const groups = new Map<string, EntityPort[]>();
   for (const port of ports) {
