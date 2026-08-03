@@ -1,14 +1,15 @@
-import { useLayoutEffect, useRef } from "react";
-import { FileCode2 } from "lucide-react";
+import Editor from "@monaco-editor/react";
+import { FileCode2, X } from "lucide-react";
 import { useI18n } from "../../i18n";
+import { configureMonaco } from "../../editor/monaco";
 
 type EditorPanelProps = {
   tabs: EditorTab[];
   activePath: string;
-  activeFileName: string;
   activeContent: string;
   readOnly: boolean;
   onSelect: (path: string) => void;
+  onClose: (path: string) => void;
   onChange: (value: string) => void;
 };
 
@@ -19,18 +20,8 @@ export type EditorTab = {
   readOnly?: boolean;
 };
 
-export function EditorPanel({ tabs, activePath, activeFileName, activeContent, readOnly, onSelect, onChange }: EditorPanelProps) {
+export function EditorPanel({ tabs, activePath, activeContent, readOnly, onSelect, onClose, onChange }: EditorPanelProps) {
   const { t } = useI18n();
-  const lineNumbersRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const syncLineNumbers = (scrollTop: number) => {
-    if (lineNumbersRef.current) lineNumbersRef.current.style.transform = `translateY(${-scrollTop}px)`;
-  };
-
-  useLayoutEffect(() => {
-    syncLineNumbers(textareaRef.current?.scrollTop ?? 0);
-  }, [activeContent, activeFileName]);
 
   return <section className="editor-panel">
     <div className="editor-tabs">
@@ -44,23 +35,42 @@ export function EditorPanel({ tabs, activePath, activeFileName, activeContent, r
         <FileCode2 size={14} />
         <span className="editor-tab-name">{tab.name}</span>
         {tab.readOnly ? <em>{t("common.readOnly")}</em> : tab.modified ? <i>{t("common.modified")}</i> : null}
+        <span
+          className="editor-tab-close"
+          role="button"
+          tabIndex={0}
+          aria-label={t("editor.closeTab", { name: tab.name })}
+          onClick={(event) => { event.stopPropagation(); onClose(tab.path); }}
+          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onClose(tab.path); } }}
+        ><X size={13} /></span>
       </button>)}
     </div>
-    <div className={`editor-wrap ${readOnly ? "read-only" : ""}`}>
-      <div className="line-numbers" aria-hidden="true">
-        <div className="line-numbers-inner" ref={lineNumbersRef}>
-          {activeContent.split("\n").map((_, index) => <span key={index}>{index + 1}</span>)}
-        </div>
-      </div>
-      <textarea
-        ref={textareaRef}
-        spellCheck={false}
+    {activePath ? <div className={`editor-wrap monaco-wrap ${readOnly ? "read-only" : ""}`}>
+      <Editor
+        path={`logicboard://project/${activePath}`}
+        language={readOnly ? "plaintext" : "vhdl"}
         value={activeContent}
-        readOnly={readOnly}
-        onChange={(event) => !readOnly && onChange(event.target.value)}
-        onScroll={(event) => syncLineNumbers(event.currentTarget.scrollTop)}
-        aria-label={readOnly ? t("editor.generatedView") : t("editor.source")}
+        theme="logicboard-dark"
+        beforeMount={configureMonaco}
+        onChange={(value) => !readOnly && onChange(value ?? "")}
+        options={{
+          automaticLayout: true,
+          readOnly,
+          minimap: { enabled: false },
+          fontFamily: "IBM Plex Mono, Consolas, monospace",
+          fontSize: 11,
+          lineHeight: 20,
+          lineNumbersMinChars: 3,
+          padding: { top: 10, bottom: 20 },
+          scrollBeyondLastLine: false,
+          tabSize: 2,
+          wordWrap: "off",
+          renderLineHighlight: "line",
+          overviewRulerBorder: false,
+          fixedOverflowWidgets: true,
+          ariaLabel: readOnly ? t("editor.generatedView") : t("editor.source")
+        }}
       />
-    </div>
+    </div> : <div className="editor-empty"><FileCode2 size={24} /><span>{t("editor.empty")}</span></div>}
   </section>;
 }
