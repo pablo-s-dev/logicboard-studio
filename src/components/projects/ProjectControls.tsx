@@ -14,17 +14,17 @@ export function ProjectSwitcher({ currentPath, recentProjects, templates, onSele
   onTemplate: (templateId: string) => void;
 }) {
   const { t } = useI18n();
+  const available = templates.length ? templates : fallbackTemplates;
   return <div className="project-switcher" onClick={(event) => event.stopPropagation()}>
     <div className="project-switcher-heading">{t("project.recent")}</div>
     {recentProjects.length ? recentProjects.map((project) => <button key={project.rootPath} className={currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? "current" : ""} onClick={() => onSelect(project.rootPath)}>
       <span>{currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? <Check size={13} /> : <FolderOpen size={13} />}</span>
       <div><b>{project.name}</b><small>{project.rootPath}</small></div>
-    </button>) : <>
-      <p>{t("project.recent.empty.templates")}</p>
-      {templates.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}>
-        <span><LayoutTemplate size={13} /></span><div><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></div>
-      </button>)}
-    </>}
+    </button>) : <p>{t("project.recent.empty")}</p>}
+    <div className="project-switcher-heading project-switcher-template-heading">{t("project.templates")}</div>
+    {available.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}>
+      <span><LayoutTemplate size={13} /></span><div><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></div>
+    </button>)}
   </div>;
 }
 
@@ -72,18 +72,19 @@ export function NewProjectDialog({ templates, parentPath, initialTemplateId, onC
     if (!folderEdited) setFolderName(projectFolderName(name));
   }, [folderEdited, name]);
 
-  return <Modal title={t("project.new.title")} onCancel={onCancel}>
+  const displayedParent = parentPath || t("project.location.defaultValue");
+  return <Modal title={t("project.new.title")} onCancel={onCancel} footer={<div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim() || !parentPath} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>}>
     <label className="project-field">{t("project.name")}<input autoFocus value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
     <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
-    <label className="project-field">{t("project.location")}<div className="project-location"><input readOnly value={parentPath} /><button type="button" className="secondary" onClick={onBrowse}>{t("project.browse")}</button></div></label>
-    <p className="project-location-help">{t("project.location.help")}</p>
-    <div className="project-destination"><small>{t("project.destination")}</small><b>{joinDisplayPath(parentPath, folderName)}</b></div>
+    <label className="project-field">{t("project.location")}<div className="project-location"><input readOnly value={displayedParent} /><button type="button" className="secondary" onClick={onBrowse}>{t("project.browse")}</button></div></label>
+    <p className="project-location-help">{t("project.location.defaultHelp", { path: displayedParent })}</p>
+    <div className="project-destination"><small>{t("project.destination")}</small><b>{joinDisplayPath(displayedParent, folderName)}</b></div>
+    <div className="template-section-label">{t("project.templates")}</div>
     <div className="template-grid">
       {available.map((template) => <button key={template.id} className={templateId === template.id ? "active" : ""} onClick={() => setTemplateId(template.id)}>
         <b>{t(`template.${template.id}.name`)}</b><span>{t(`template.${template.id}.description`)}</span>
       </button>)}
     </div>
-    <div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim() || !parentPath} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>
   </Modal>;
 }
 
@@ -177,12 +178,13 @@ export function RemoveAssignmentDialog({ label, onConfirm, onCancel }: {
   </Modal>;
 }
 
-function Modal({ title, children, onCancel }: { title: string; children: React.ReactNode; onCancel: () => void }) {
+function Modal({ title, children, footer, onCancel }: { title: string; children: React.ReactNode; footer?: React.ReactNode; onCancel: () => void }) {
   const { t } = useI18n();
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}>
     <section className="project-modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
       <header><div><small>LOGICBOARD STUDIO</small><h2>{title}</h2></div><button aria-label={t("common.close")} onClick={onCancel}>×</button></header>
       <div className="modal-body">{children}</div>
+      {footer && <footer className="modal-footer">{footer}</footer>}
     </section>
   </div>;
 }
