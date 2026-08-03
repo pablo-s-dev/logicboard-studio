@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-02
+
+### Added
+
+- Added the locally bundled Monaco editor with VHDL syntax highlighting, native line numbers, per-file models, preserved view state, and read-only generated constraints.
+- Added closeable VS Code-style editor tabs that retain project sources and reopen from Explorer.
+- Added a native default `Documents/LogicBoard Projects` directory, remembered project location, and an eight-entry recent project switcher.
+- Added a New Project destination field, folder browser, child-path preview, and clear explanation of the folder that will be created.
+- Added automated coverage for tooltip placement, VHDL highlighting rules, editor tab transitions, recent projects, starter drafts, and top-entity reconciliation.
+
+### Changed
+
+- Separated the recent-project selector from the New/Open/Save As/Settings actions menu.
+- Changed untouched starter projects to be safely replaceable while continuing to protect edited and legacy-recovered drafts.
+- Changed the configured top entity automatically when exactly one valid entity remains after editing.
+- Moved the interactive-board title and mapping guidance inside the board's scrollable canvas.
+- Kept validation errors that can be fixed in the editor inside Problems while reserving native dialogs for blocking filesystem failures.
+
+### Fixed
+
+- Prevented board tooltips from leaving the viewport by measuring, flipping, and clamping their rendered position.
+- Fixed editor tabs so only the active tab has a cyan top border and inactive separators remain subtle.
+- Fixed New Project so unsaved work is resolved before template and destination selection rather than after it.
+- Removed the redundant Open Existing button from the New Project dialog.
+
 ## [0.2.0] - 2026-08-02
 
 ### Added

@@ -8,6 +8,10 @@ This roadmap tracks the next implementation work for the editor, desktop project
 - [x] Preserve gutter alignment when source text changes or the active file changes.
 - [x] Keep horizontal source scrolling independent from the line-number gutter.
 - [ ] Add focused component coverage for editor scrolling when a DOM test environment is introduced.
+- [x] Replace the textarea and manual gutter with the bundled Monaco editor.
+- [x] Add VHDL syntax highlighting and project-scoped editor models.
+- [x] Add closeable tabs that preserve project sources and reopen from Explorer.
+- [x] Distinguish active and inactive tabs without the previous repeated cyan borders.
 
 Acceptance criteria:
 
@@ -21,14 +25,14 @@ Planned commits:
 
 ## Viewport-safe board tooltips
 
-- [ ] Extract tooltip placement into a reusable, independently testable helper.
-- [ ] Measure the rendered tooltip instead of assuming a fixed size.
-- [ ] Prefer placement below and to the right of the pointer with a 12 px gap.
-- [ ] Flip left or above the pointer when the preferred side would overflow.
-- [ ] Clamp the final position to an 8 px margin on every viewport edge.
-- [ ] Recalculate placement on pointer movement, scrolling, and window resizing.
-- [ ] Limit tooltip width to the available viewport and wrap long text.
-- [ ] Cover corners, narrow windows, long text, scrolling, and resizing in tests.
+- [x] Extract tooltip placement into a reusable, independently testable helper.
+- [x] Measure the rendered tooltip instead of assuming a fixed size.
+- [x] Prefer placement below and to the right of the pointer with a 12 px gap.
+- [x] Flip left or above the pointer when the preferred side would overflow.
+- [x] Clamp the final position to an 8 px margin on every viewport edge.
+- [x] Recalculate placement on pointer movement, scrolling, and window resizing.
+- [x] Limit tooltip width to the available viewport and wrap long text.
+- [x] Cover corners and narrow viewports in automated placement tests.
 
 Acceptance criteria:
 
@@ -125,6 +129,17 @@ Planned commits:
 - [x] Test template loading, independent copies, reopening saved projects, and analyze every bundled VHDL source with GHDL.
 - [ ] Run the full frontend suite and Rust tests in CI.
 
+## Desktop project experience
+
+- [x] Use `Documents/LogicBoard Projects` as the native default parent directory.
+- [x] Remember the last chosen parent directory and up to eight recent projects.
+- [x] Split quick project switching from the project actions menu.
+- [x] Explain and preview the child folder created by the New Project dialog.
+- [x] Remove the redundant Open Existing action from template creation.
+- [x] Treat an untouched starter as replaceable while protecting edited and recovered drafts.
+- [x] Automatically select the only remaining VHDL entity when the configured top disappears.
+- [x] Keep editable validation failures in Problems instead of showing a native blocking dialog.
+
 Planned commit:
 
 - `test(projects): cover persistence and template workflows`
@@ -143,7 +158,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 30 tests passing across four test files.
-- `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 16 tests passing.
+- `npm test`: 40 tests passing across seven test files.
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 17 tests passing.
 - Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
 - `npm run build`: TypeScript and Vite production build passing.
