@@ -147,6 +147,8 @@ export function recoverLegacyProject(getItem: (key: string) => string | null) {
   return untitledProject(storedSource ?? starterVhdl, assignments, storedSource !== null || storedAssignments !== null);
 }
 
+export const hasInitialProject = (project: ProjectState) => project.legacyRecovered;
+
 export type UnsavedDecision = "save" | "discard" | "cancel";
 
 export function shouldContinueProjectAction(decision: UnsavedDecision, saveSucceeded = false) {

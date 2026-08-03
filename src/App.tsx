@@ -25,11 +25,12 @@ import type { Assignment, BoardEndpoint, EntityPort, MappingMode, MappingTarget,
 import { parseEntityPorts, previewOutputs } from "./vhdl";
 import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, resolveProjectParent, saveProject, saveProjectAs, showProjectError } from "./projects/api";
 import { useProjectWorkspace } from "./projects/useProjectWorkspace";
-import { validateProjectManifest } from "./projects/model";
+import { hasInitialProject, validateProjectManifest } from "./projects/model";
 import { isProjectSourceDirty, shouldContinueProjectAction } from "./projects/model";
 import type { LoadedProject, ProjectTemplate } from "./projects/model";
 import { addRecentProject, loadRecentProjects, parentPath, projectParentKey, recentProjectsKey } from "./projects/recent";
 import { useI18n } from "./i18n";
+import { bottomPaneLimits, minimumBottomPaneHeight } from "./layout";
 
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
 type PaneSizes = { explorer: number; editor: number; inspector: number; bottom: number };
@@ -44,7 +45,7 @@ type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationS
 type SimulationSessionResult = SimulationResult & { sessionId: string };
 type ProjectDialog = "new" | "project-settings" | "application-settings" | null;
 
-const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: 96 };
+const defaultPaneSizes: PaneSizes = { explorer: 185, editor: 350, inspector: 300, bottom: minimumBottomPaneHeight };
 const defaultCollapsed: CollapsedPanes = { explorer: true, inspector: true, bottom: true };
 const emptyPortValues: Record<string, boolean> = {};
 const initialSimulationWarmupNs = 20_000_000;
@@ -52,7 +53,7 @@ const paneLimits: Record<ResizeKind, [number, number]> = {
   explorer: [132, 310],
   editor: [280, 620],
   inspector: [240, 520],
-  bottom: [96, 360]
+  bottom: [minimumBottomPaneHeight, 360]
 };
 
 const loadStored = <T,>(key: string, fallback: T): T => {
@@ -95,7 +96,7 @@ export default function App() {
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false);
   const [projectDialog, setProjectDialog] = useState<ProjectDialog>(null);
-  const [hasProject, setHasProject] = useState(project.legacyRecovered);
+  const [hasProject, setHasProject] = useState(() => hasInitialProject(project));
   const [activityView, setActivityView] = useState<ActivityView>(project.legacyRecovered ? "explorer" : "projects");
   const [initialTemplateId, setInitialTemplateId] = useState<string | undefined>();
   const [projectTemplates, setProjectTemplates] = useState<ProjectTemplate[]>([]);
@@ -478,7 +479,7 @@ export default function App() {
       const deltaY = moveEvent.clientY - startY;
       const next = kind === "inspector" ? start - deltaX : kind === "bottom" ? start - deltaY : start + deltaX;
       const limits: [number, number] = kind === "bottom"
-        ? [paneLimits.bottom[0], Math.max(paneLimits.bottom[0], (document.querySelector(".workspace")?.clientHeight ?? window.innerHeight) - 225)]
+        ? bottomPaneLimits(document.querySelector(".workspace")?.clientHeight ?? window.innerHeight)
         : paneLimits[kind];
       setPaneSizes((old) => ({ ...old, [kind]: clamp(next, limits) }));
     };

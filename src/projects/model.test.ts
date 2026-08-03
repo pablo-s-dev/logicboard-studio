@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  closeOpenPath, isProjectDirty, loadedProjectState, projectEntityNames, reconcileTopEntity, recoverLegacyProject,
+  closeOpenPath, hasInitialProject, isProjectDirty, loadedProjectState, projectEntityNames, reconcileTopEntity, recoverLegacyProject,
   shouldContinueProjectAction, sourceContainingEntity, sourcePayloads, untitledProject
 } from "./model";
 import type { LoadedProject, ProjectState } from "./model";
@@ -62,6 +62,8 @@ describe("desktop project state", () => {
   it("treats the untouched starter as clean while preserving recovered drafts", () => {
     expect(isProjectDirty(untitledProject())).toBe(false);
     expect(isProjectDirty(untitledProject("entity recovered is end entity;", [], true))).toBe(true);
+    expect(hasInitialProject(untitledProject())).toBe(false);
+    expect(hasInitialProject(untitledProject("entity recovered is end entity;", [], true))).toBe(true);
   });
 
   it("closes only the editor view and selects the neighboring tab", () => {
