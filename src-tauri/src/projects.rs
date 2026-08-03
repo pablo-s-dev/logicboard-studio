@@ -40,6 +40,12 @@ pub struct ProjectSource {
     pub content: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectWorkspaceDefaults {
+    pub parent_path: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectSaveRequest {
@@ -337,9 +343,28 @@ fn template_root(app: &tauri::AppHandle, template_id: &str) -> Result<PathBuf, S
     app.path().resource_dir().map_err(|error| error.to_string()).map(|root| root.join("templates").join(template_id))
 }
 
+fn resolve_project_parent_path(preferred: Option<&Path>, default: &Path) -> Result<PathBuf, String> {
+    if let Some(preferred) = preferred {
+        if let Ok(canonical) = preferred.canonicalize() {
+            if canonical.is_dir() {
+                return Ok(canonical);
+            }
+        }
+    }
+    fs::create_dir_all(default).map_err(|error| format!("Could not create default projects folder {}: {error}", default.display()))?;
+    default.canonicalize().map_err(|error| format!("Could not validate default projects folder {}: {error}", default.display()))
+}
+
 #[tauri::command]
 pub fn list_project_templates() -> Vec<ProjectTemplate> {
     PROJECT_TEMPLATES.to_vec()
+}
+
+#[tauri::command]
+pub fn resolve_project_parent(app: tauri::AppHandle, preferred_path: Option<String>) -> Result<ProjectWorkspaceDefaults, String> {
+    let documents = app.path().document_dir().map_err(|error| format!("Could not locate the Documents folder: {error}"))?;
+    let parent = resolve_project_parent_path(preferred_path.as_deref().map(Path::new), &documents.join("LogicBoard Projects"))?;
+    Ok(ProjectWorkspaceDefaults { parent_path: parent.to_string_lossy().to_string() })
 }
 
 #[tauri::command]
@@ -467,6 +492,20 @@ mod tests {
         let second = create_from_request(&parent.0, "second", &template_request).unwrap();
         transactional_write(Path::new(&first.root_path), &request("changed")).unwrap();
         assert_ne!(load_project_root(Path::new(&first.root_path)).unwrap().sources[0].content, load_project_root(Path::new(&second.root_path)).unwrap().sources[0].content);
+    }
+
+    #[test]
+    fn resolves_a_preferred_parent_or_creates_the_default() {
+        let root = TestDir::new("parent-default");
+        let preferred = root.0.join("preferred");
+        fs::create_dir(&preferred).unwrap();
+        let default = root.0.join("Documents").join("LogicBoard Projects");
+        assert_eq!(resolve_project_parent_path(Some(&preferred), &default).unwrap(), preferred.canonicalize().unwrap());
+
+        let missing = root.0.join("missing");
+        let resolved_default = resolve_project_parent_path(Some(&missing), &default).unwrap();
+        assert!(resolved_default.is_dir());
+        assert_eq!(resolved_default, default.canonicalize().unwrap());
     }
 
     #[test]

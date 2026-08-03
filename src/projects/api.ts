@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { message, open } from "@tauri-apps/plugin-dialog";
-import type { LoadedProject, ProjectManifest, ProjectSource, ProjectTemplate } from "./model";
+import type { LoadedProject, ProjectManifest, ProjectSource, ProjectTemplate, ProjectWorkspaceDefaults } from "./model";
 
 export const isDesktopApp = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -8,10 +8,15 @@ const requireDesktop = () => {
   if (!isDesktopApp()) throw new Error("Project folders are available only in the Tauri desktop application.");
 };
 
-export async function chooseProjectFolder() {
+export async function chooseProjectFolder(defaultPath?: string) {
   requireDesktop();
-  const selected = await open({ directory: true, multiple: false });
+  const selected = await open({ directory: true, multiple: false, defaultPath });
   return typeof selected === "string" ? selected : null;
+}
+
+export async function resolveProjectParent(preferredPath?: string) {
+  requireDesktop();
+  return invoke<ProjectWorkspaceDefaults>("resolve_project_parent", { preferredPath });
 }
 
 export async function showProjectError(error: unknown, title = "LogicBoard project error") {

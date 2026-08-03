@@ -10,7 +10,7 @@ use std::{
 };
 
 mod projects;
-use projects::{create_project, list_project_templates, open_project, save_project, save_project_as};
+use projects::{create_project, list_project_templates, open_project, resolve_project_parent, save_project, save_project_as};
 
 const MAX_SESSION_STEP_NS: u64 = 250_000_000;
 
@@ -905,6 +905,7 @@ pub fn run() {
             step_simulation_session,
             stop_simulation_session,
             list_project_templates,
+            resolve_project_parent,
             open_project,
             create_project,
             save_project,
