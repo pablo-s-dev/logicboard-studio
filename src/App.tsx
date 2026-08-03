@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import {
-  Activity, ChevronDown, CircleStop, Cpu, FileCode2, FolderKanban, FolderOpen, Gauge,
+  Activity, BadgeInfo, ChevronDown, CircleStop, Cpu, FileCode2, FolderKanban, FolderOpen, Gauge,
   Info, MoreHorizontal, Play, RotateCcw, Save, Search, Settings2, TerminalSquare, Unplug
 } from "lucide-react";
 import { boards, cycloneII } from "./board";
@@ -16,6 +16,7 @@ import { EditorPanel } from "./components/panels/EditorPanel";
 import { InspectorPanel, type InspectorView } from "./components/panels/InspectorPanel";
 import { LogPanel } from "./components/panels/LogPanel";
 import { CompilationPanel, type CompilationReport } from "./components/panels/CompilationPanel";
+import { CreditsPanel } from "./components/panels/CreditsPanel";
 import { Waveform } from "./components/panels/Waveform";
 import {
   buildSimulationClocks, effectivePace, formatFrequency, nsPerMs,
@@ -32,6 +33,7 @@ import type { LoadedProject, ProjectTemplate } from "./projects/model";
 import { addRecentProject, loadRecentProjects, parentPath, projectParentKey, recentProjectsKey } from "./projects/recent";
 import { useI18n } from "./i18n";
 import { bottomPaneLimits, minimumBottomPaneHeight } from "./layout";
+import { toggleActivityView, type ActivityView } from "./activity";
 
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
 type PaneSizes = { explorer: number; editor: number; inspector: number; bottom: number };
@@ -39,7 +41,6 @@ type CollapsedPanes = { explorer: boolean; inspector: boolean; bottom: boolean }
 type ResizeKind = keyof PaneSizes;
 type SimState = "stopped" | "running";
 type BottomTab = "waveform" | "compilation" | "problems";
-type ActivityView = "explorer" | "projects";
 type SimulationInputEvent = { timeNs: number; portId: string; value: boolean };
 type SimulationSample = { timeNs: number; outputs: Record<string, boolean> };
 type SimulationResult = { outputs: Record<string, boolean>; samples: SimulationSample[]; diagnostics: string[]; simulatedTimeNs: number };
@@ -758,7 +759,8 @@ export default function App() {
     .map((path) => availableEditorTabs.find((tab) => tab.path === path))
     .filter((tab): tab is NonNullable<typeof tab> => Boolean(tab));
   const workspaceStyle = {
-    "--explorer-width": `${activityView === "projects" ? 260 : collapsed.explorer ? 34 : paneSizes.explorer}px`,
+    "--explorer-width": `${activityView === null ? 0 : activityView === "explorer" ? paneSizes.explorer : 260}px`,
+    "--explorer-handle-width": `${activityView === null ? 0 : 5}px`,
     "--editor-width": `${paneSizes.editor}px`,
     "--inspector-width": `${collapsed.inspector ? 34 : paneSizes.inspector}px`,
     "--bottom-height": `${collapsed.bottom ? 34 : paneSizes.bottom}px`
@@ -774,6 +776,11 @@ export default function App() {
   const clockNoticeTooltip = clockNotice
     ? t("clock.tooltip", { simulation: clockNotice.simulation, physical: clockNotice.physical, pace: paceLabel })
     : "";
+  const selectActivity = (requested: Exclude<ActivityView, null>) => {
+    const next = toggleActivityView(activityView, requested);
+    setActivityView(next);
+    if (next === "explorer") setCollapsed((old) => ({ ...old, explorer: false }));
+  };
 
   return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); if (projectSwitcherOpen) setProjectSwitcherOpen(false); }}>
     <header className="topbar">
@@ -826,17 +833,22 @@ export default function App() {
       {isClockedSimulation && <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>}
     </div>}
 
-    <main className={`workspace ${hasProject ? "" : "no-project"} ${activityView === "explorer" && collapsed.explorer ? "explorer-collapsed" : ""} ${collapsed.inspector ? "inspector-collapsed" : ""} ${collapsed.bottom ? "bottom-collapsed" : ""}`} style={workspaceStyle}>
+    <main className={`workspace ${hasProject ? "" : "no-project"} ${activityView === null ? "activity-collapsed" : ""} ${collapsed.inspector ? "inspector-collapsed" : ""} ${collapsed.bottom ? "bottom-collapsed" : ""}`} style={workspaceStyle}>
       <nav className="activity-bar" aria-label={t("activity.title")}>
-        <button className={activityView === "explorer" ? "active" : ""} title={t("explorer.title")} onClick={() => setActivityView("explorer")}><FileCode2 size={20} /></button>
-        <button className={activityView === "projects" ? "active" : ""} title={t("project.hub")} onClick={() => setActivityView("projects")}><FolderKanban size={20} /></button>
+        <button className={activityView === "explorer" ? "active" : ""} title={t("explorer.title")} onClick={() => selectActivity("explorer")}><FileCode2 size={20} /></button>
+        <button className={activityView === "projects" ? "active" : ""} title={t("project.hub")} onClick={() => selectActivity("projects")}><FolderKanban size={20} /></button>
+        <span className="activity-spacer" />
+        <button className={activityView === "credits" ? "active" : ""} title={t("credits.title")} onClick={() => selectActivity("credits")}><BadgeInfo size={20} /></button>
       </nav>
-      <aside className="files-panel">
-        {activityView === "projects" ? <>
+      {activityView !== null && <aside className="files-panel">
+        {activityView === "credits" ? <>
+          <div className="panel-heading"><span>{t("credits.title")}</span></div>
+          <CreditsPanel />
+        </> : activityView === "projects" ? <>
           <div className="panel-heading"><span>{t("project.hub")}</span></div>
           <ProjectHub hasProject={hasProject} projectName={manifest.name} projectPath={project.rootPath} recentProjects={recentProjects} templates={projectTemplates} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} onRecent={(path) => void openRecentProject(path)} />
-        </> : collapsed.explorer ? <button className="panel-rail compact" title={t("explorer.expand")} onClick={() => togglePane("explorer")}><FileCode2 size={15} /></button> : <>
-          <div className="panel-heading"><span>{t("explorer.title")}</span><button className="collapse-button" title={t("explorer.collapse")} onClick={() => togglePane("explorer")}>‹</button></div>
+        </> : <>
+          <div className="panel-heading"><span>{t("explorer.title")}</span><button className="collapse-button" title={t("explorer.collapse")} onClick={() => setActivityView(null)}>‹</button></div>
           {hasProject ? <><div className="tree-scroll">
             <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
             {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
@@ -844,9 +856,9 @@ export default function App() {
           </div>
           <div className="files-footer"><div><span>{t("explorer.topEntity")}</span><strong>{topEntity}</strong></div></div></> : <p className="empty-list">{t("explorer.noProject")}</p>}
         </>}
-      </aside>
+      </aside>}
       {hasProject ? <>
-      <div className="resize-handle vertical explorer-handle" title={t("resize.explorer")} onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />
+      {activityView !== null && <div className="resize-handle vertical explorer-handle" title={t("resize.explorer")} onPointerDown={(event) => startResize("explorer", event)} onDoubleClick={() => resetPane("explorer")} />}
 
       <EditorPanel
         tabs={editorTabs}
