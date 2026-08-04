@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Minimized the seven-segment cards around their displays and vertically centered board groups and their device rows.
+
 ## [0.5.1] - 2026-08-03
 
 ### Added
