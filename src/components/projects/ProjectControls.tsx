@@ -5,6 +5,7 @@ import type { ProjectTemplate } from "../../projects/model";
 import { projectFolderName } from "../../projects/api";
 import { useI18n } from "../../i18n";
 import type { RecentProject } from "../../projects/recent";
+import { isBrowserProjectPath } from "../../projects/browser";
 
 export function ProjectSwitcher({ currentPath, recentProjects, templates, onSelect, onTemplate }: {
   currentPath: string | null;
@@ -19,7 +20,7 @@ export function ProjectSwitcher({ currentPath, recentProjects, templates, onSele
     <div className="project-switcher-heading">{t("project.recent")}</div>
     {recentProjects.length ? recentProjects.map((project) => <button key={project.rootPath} className={currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? "current" : ""} onClick={() => onSelect(project.rootPath)}>
       <span>{currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? <Check size={13} /> : <FolderOpen size={13} />}</span>
-      <div><b>{project.name}</b><small>{project.rootPath}</small></div>
+      <div><b>{project.name}</b><small>{projectLocation(project.rootPath, t("project.browserStorage"))}</small></div>
     </button>) : <p>{t("project.recent.empty")}</p>}
     <div className="project-switcher-heading project-switcher-template-heading">{t("project.templates")}</div>
     {available.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}>
@@ -28,20 +29,21 @@ export function ProjectSwitcher({ currentPath, recentProjects, templates, onSele
   </div>;
 }
 
-export function ProjectMenu({ onNew, onOpen, onTemplates, onSaveAs, onSettings, hasProject }: {
+export function ProjectMenu({ onNew, onOpen, onTemplates, onSaveAs, onSettings, hasProject, browserStorage = false }: {
   onNew: () => void;
   onOpen: () => void;
   onTemplates: () => void;
   onSaveAs: () => void;
   onSettings: () => void;
   hasProject: boolean;
+  browserStorage?: boolean;
 }) {
   const { t } = useI18n();
   return <div className="project-menu project-actions-menu" onClick={(event) => event.stopPropagation()}>
     <button onClick={onNew}><FolderPlus size={14} /><span><b>{t("project.new")}</b><small>{t("project.new.help")}</small></span></button>
-    <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t("project.open.help")}</small></span></button>
+    <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t(browserStorage ? "project.open.browserHelp" : "project.open.help")}</small></span></button>
     <button onClick={onTemplates}><LayoutTemplate size={14} /><span><b>{t("project.templates")}</b><small>{t("project.templates.help")}</small></span></button>
-    <button disabled={!hasProject} onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t("project.saveAs.help")}</small></span></button>
+    <button disabled={!hasProject} onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t(browserStorage ? "project.saveAs.browserHelp" : "project.saveAs.help")}</small></span></button>
     <button disabled={!hasProject} onClick={onSettings}><Settings2 size={14} /><span><b>{t("project.settings")}</b><small>{t("project.settings.help")}</small></span></button>
   </div>;
 }
@@ -53,10 +55,11 @@ const fallbackTemplates: ProjectTemplate[] = [
   { id: "four-digit-timer", name: "Four-digit timer", description: "Clocked timer with buttons, LEDs, and four seven-segment displays." }
 ];
 
-export function NewProjectDialog({ templates, parentPath, initialTemplateId, onCancel, onBrowse, onCreate }: {
+export function NewProjectDialog({ templates, parentPath, initialTemplateId, browserStorage = false, onCancel, onBrowse, onCreate }: {
   templates: ProjectTemplate[];
   parentPath: string;
   initialTemplateId?: string;
+  browserStorage?: boolean;
   onCancel: () => void;
   onBrowse: () => void;
   onCreate: (name: string, folderName: string, templateId: string, parentPath: string) => void;
@@ -73,12 +76,14 @@ export function NewProjectDialog({ templates, parentPath, initialTemplateId, onC
   }, [folderEdited, name]);
 
   const displayedParent = parentPath || t("project.location.defaultValue");
-  return <Modal title={t("project.new.title")} onCancel={onCancel} footer={<div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || !folderName.trim() || !parentPath} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>}>
+  return <Modal title={t("project.new.title")} onCancel={onCancel} footer={<div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || (!browserStorage && (!folderName.trim() || !parentPath))} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>}>
     <label className="project-field">{t("project.name")}<input autoFocus value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
-    <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
-    <label className="project-field">{t("project.location")}<div className="project-location"><input readOnly value={displayedParent} /><button type="button" className="secondary" onClick={onBrowse}>{t("project.browse")}</button></div></label>
-    <p className="project-location-help">{t("project.location.defaultHelp", { path: displayedParent })}</p>
-    <div className="project-destination"><small>{t("project.destination")}</small><b>{joinDisplayPath(displayedParent, folderName)}</b></div>
+    {browserStorage ? <div className="project-storage-note"><Save size={15} /><span><b>{t("project.browserStorage")}</b><small>{t("project.browserStorage.help")}</small></span></div> : <>
+      <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
+      <label className="project-field">{t("project.location")}<div className="project-location"><input readOnly value={displayedParent} /><button type="button" className="secondary" onClick={onBrowse}>{t("project.browse")}</button></div></label>
+      <p className="project-location-help">{t("project.location.defaultHelp", { path: displayedParent })}</p>
+      <div className="project-destination"><small>{t("project.destination")}</small><b>{joinDisplayPath(displayedParent, folderName)}</b></div>
+    </>}
     <div className="template-section-label">{t("project.templates")}</div>
     <div className="template-grid">
       {available.map((template) => <button key={template.id} className={templateId === template.id ? "active" : ""} onClick={() => setTemplateId(template.id)}>
@@ -101,17 +106,18 @@ export function ProjectHub({ hasProject, projectName, projectPath, recentProject
 }) {
   const { t } = useI18n();
   return <div className="project-hub">
-    {hasProject && <div className="project-hub-current"><small>{t("project.current")}</small><b>{projectName}</b><span>{projectPath ?? t("project.unsaved")}</span></div>}
+    {hasProject && <div className="project-hub-current"><small>{t("project.current")}</small><b>{projectName}</b><span>{projectPath ? projectLocation(projectPath, t("project.browserStorage")) : t("project.unsaved")}</span></div>}
     <div className="project-hub-actions"><button onClick={onNew}><FolderPlus size={15} />{t("project.new")}</button><button onClick={onOpen}><FolderOpen size={15} />{t("project.open")}</button></div>
     <h3>{t("project.recent")}</h3>
-    {recentProjects.length ? recentProjects.map((recent) => <button className="project-hub-item" key={recent.rootPath} onClick={() => onRecent(recent.rootPath)}><FolderOpen size={14} /><span><b>{recent.name}</b><small>{recent.rootPath}</small></span></button>) : <p>{t("project.recent.empty")}</p>}
+    {recentProjects.length ? recentProjects.map((recent) => <button className="project-hub-item" key={recent.rootPath} onClick={() => onRecent(recent.rootPath)}><FolderOpen size={14} /><span><b>{recent.name}</b><small>{projectLocation(recent.rootPath, t("project.browserStorage"))}</small></span></button>) : <p>{t("project.recent.empty")}</p>}
     <h3>{t("project.templates")}</h3>
     {templates.map((template) => <button className="project-hub-item" key={template.id} onClick={() => onTemplate(template.id)}><LayoutTemplate size={14} /><span><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></span></button>)}
   </div>;
 }
 
-export function ProjectWelcome({ templates, onNew, onOpen, onTemplate }: {
+export function ProjectWelcome({ templates, browserStorage = false, onNew, onOpen, onTemplate }: {
   templates: ProjectTemplate[];
+  browserStorage?: boolean;
   onNew: () => void;
   onOpen: () => void;
   onTemplate: (templateId: string) => void;
@@ -119,7 +125,7 @@ export function ProjectWelcome({ templates, onNew, onOpen, onTemplate }: {
   const { t } = useI18n();
   return <section className="project-welcome">
     <div className="welcome-mark"><LayoutTemplate size={30} /></div>
-    <small>LOGICBOARD STUDIO</small><h1>{t("welcome.title")}</h1><p>{t("welcome.copy")}</p>
+    <small>LOGICBOARD STUDIO</small><h1>{t("welcome.title")}</h1><p>{t(browserStorage ? "welcome.copy.browser" : "welcome.copy")}</p>
     <div className="welcome-actions"><button className="primary" onClick={onNew}><FolderPlus size={16} />{t("project.new")}</button><button onClick={onOpen}><FolderOpen size={16} />{t("project.open")}</button></div>
     <div className="welcome-templates">{templates.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}><LayoutTemplate size={15} /><span><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></span></button>)}</div>
   </section>;
@@ -129,6 +135,10 @@ function joinDisplayPath(parentPath: string, folderName: string) {
   if (!parentPath) return folderName;
   const separator = parentPath.includes("\\") ? "\\" : "/";
   return `${parentPath.replace(/[\\/]+$/, "")}${separator}${folderName}`;
+}
+
+function projectLocation(path: string, browserStorageLabel: string) {
+  return isBrowserProjectPath(path) ? browserStorageLabel : path;
 }
 
 export function ProjectSettingsDialog({ name, boardId, topEntity, boards, entityNames, onCancel, onSave }: {

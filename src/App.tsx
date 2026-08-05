@@ -208,7 +208,6 @@ export default function App() {
       .catch((error) => setRuntimeProblems([String(error)]));
   }, []);
   useEffect(() => {
-    if (!isDesktopApp()) return;
     void listTemplates().then(setProjectTemplates).catch((error) => setRuntimeProblems([String(error)]));
   }, []);
   useEffect(() => { setProblems(visibleProblems); }, [visibleProblems]);
@@ -286,7 +285,7 @@ export default function App() {
 
   const rememberProject = (loaded: LoadedProject) => {
     setRecentProjects((current) => addRecentProject(current, loaded));
-    setProjectParent(parentPath(loaded.rootPath));
+    if (isDesktopApp()) setProjectParent(parentPath(loaded.rootPath));
   };
 
   const replaceProject = (loaded: LoadedProject) => {
@@ -304,10 +303,6 @@ export default function App() {
   };
 
   const persistProject = async (saveAs = false) => {
-    if (!isDesktopApp()) {
-      reportProjectError(t("project.desktopOnly"));
-      return false;
-    }
     setProjectBusy(true);
     try {
       const validationProblems = validateProjectManifest(manifest, project.sources);
@@ -318,6 +313,8 @@ export default function App() {
       const payload = { manifest, sources: project.sources };
       const loaded = project.rootPath && !saveAs
         ? await saveProject(project.rootPath, payload)
+        : !isDesktopApp()
+          ? await saveProjectAs("", projectFolderName(manifest.name), payload)
         : await (async () => {
           const resolved = await resolveProjectParent(projectParent || undefined);
           const selectedParent = await chooseProjectFolder(resolved.parentPath);
@@ -349,18 +346,25 @@ export default function App() {
     }
   };
 
-  const openExistingProject = () => runProjectAction(async () => {
-    setProjectBusy(true);
-    try {
-      const projectPath = await chooseProjectFolder(projectParent || undefined);
-      if (!projectPath) return;
-      replaceProject(await openProject(projectPath));
-    } catch (error) {
-      reportProjectError(error);
-    } finally {
-      setProjectBusy(false);
+  const openExistingProject = () => {
+    if (!isDesktopApp()) {
+      setActivityView("projects");
+      setProjectSwitcherOpen(true);
+      return;
     }
-  });
+    runProjectAction(async () => {
+      setProjectBusy(true);
+      try {
+        const projectPath = await chooseProjectFolder(projectParent || undefined);
+        if (!projectPath) return;
+        replaceProject(await openProject(projectPath));
+      } catch (error) {
+        reportProjectError(error);
+      } finally {
+        setProjectBusy(false);
+      }
+    });
+  };
 
   const openRecentProject = (projectPath: string) => runProjectAction(async () => {
     if (project.rootPath?.toLocaleLowerCase() === projectPath.toLocaleLowerCase()) return;
@@ -797,6 +801,7 @@ export default function App() {
           onSaveAs={() => { setProjectMenuOpen(false); void persistProject(true); }}
           onSettings={() => { setProjectMenuOpen(false); setProjectDialog("project-settings"); }}
           hasProject={hasProject}
+          browserStorage={!isDesktopApp()}
         />}
       </div>
       <div className="top-spacer" />
@@ -909,7 +914,7 @@ export default function App() {
             ? <CompilationPanel report={compilationReport} lines={compilationLog} empty={t("bottom.noCompilation")} />
             : <LogPanel lines={problems} empty={t("bottom.noProblems")} problem />)}
       </section>
-      </> : <ProjectWelcome templates={projectTemplates} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} />}
+      </> : <ProjectWelcome templates={projectTemplates} browserStorage={!isDesktopApp()} onNew={() => showNewProject()} onOpen={() => void openExistingProject()} onTemplate={(templateId) => showNewProject(templateId)} />}
     </main>
 
     {context && <AssignmentMenu
@@ -931,6 +936,7 @@ export default function App() {
       templates={projectTemplates}
       parentPath={projectParent}
       initialTemplateId={initialTemplateId}
+      browserStorage={!isDesktopApp()}
       onCancel={() => setProjectDialog(null)}
       onBrowse={() => void browseProjectParent()}
       onCreate={(name, folderName, templateId, parent) => void createNewProject(name, folderName, templateId, parent)}
@@ -946,6 +952,7 @@ export default function App() {
     />}
     {projectDialog === "application-settings" && <ApplicationSettingsDialog
       projectParent={projectParent}
+      browserStorage={!isDesktopApp()}
       onBrowse={async (currentPath) => {
         try {
           const resolved = await resolveProjectParent(currentPath || undefined);

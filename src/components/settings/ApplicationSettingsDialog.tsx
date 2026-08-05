@@ -3,8 +3,9 @@ import { useState } from "react";
 import { useI18n } from "../../i18n";
 import type { Language } from "../../i18n";
 
-export function ApplicationSettingsDialog({ projectParent, onBrowse, onApplyProjectParent, onCancel }: {
+export function ApplicationSettingsDialog({ projectParent, browserStorage = false, onBrowse, onApplyProjectParent, onCancel }: {
   projectParent: string;
+  browserStorage?: boolean;
   onBrowse: (currentPath: string) => Promise<string | null>;
   onApplyProjectParent: (path: string) => void;
   onCancel: () => void;
@@ -42,10 +43,10 @@ export function ApplicationSettingsDialog({ projectParent, onBrowse, onApplyProj
           </select>
           <small className="field-help">{t("settings.language.help")}</small>
         </label>
-        <label className="project-field">{t("settings.projectDirectory")}
+        {browserStorage ? <div className="project-storage-note"><FolderOpen size={15} /><span><b>{t("project.browserStorage")}</b><small>{t("project.browserStorage.help")}</small></span></div> : <label className="project-field">{t("settings.projectDirectory")}
           <div className="project-location"><input readOnly value={displayedParent} /><button type="button" className="secondary" disabled={browsing} onClick={() => void browse()}><FolderOpen size={14} />{t("project.browse")}</button></div>
           <small className="field-help">{t("settings.projectDirectory.help")}</small>
-        </label>
+        </label>}
       </div>
       <footer className="modal-footer"><div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" onClick={apply}>{t("settings.apply")}</button></div></footer>
     </section>

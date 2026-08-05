@@ -479,6 +479,10 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .project-destination { display: flex; flex-direction: column; gap: 5px; padding: 9px 11px; border: 1px solid #27343b; border-radius: 5px; background: #0b1114; }
 .project-destination small { color: #65747d; font-size: 7px; letter-spacing: .7px; text-transform: uppercase; }
 .project-destination b { overflow-wrap: anywhere; color: #9ecdd0; font: 9px/14px "IBM Plex Mono", monospace; font-weight: 400; }
+.project-storage-note { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 13px; padding: 10px 11px; border: 1px solid #2a4148; border-radius: 5px; background: #102026; color: #69dce1; }
+.project-storage-note span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.project-storage-note b { color: #b8e8eb; font-size: 9px; font-weight: 500; }
+.project-storage-note small { color: #718991; font-size: 8px; line-height: 13px; }
 .settings-modal { width: min(460px, calc(100vw - 32px)); }
 .field-help { color: #62727a; font-size: 8px; letter-spacing: 0; line-height: 13px; text-transform: none; }
 .template-section-label { margin: 18px 0 8px; color: #819098; font-size: 8px; font-weight: 600; letter-spacing: .9px; text-transform: uppercase; }
