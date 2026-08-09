@@ -5,6 +5,7 @@ src-tauri/resources/ghdl/
 .idea/
 .vscode/
 *.log
+.codex-remote-attachments/
 
 # Local reference material
 refs/
