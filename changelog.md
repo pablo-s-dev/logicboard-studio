@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-09
+
 ### Added
 
 - Added browser project creation, saving, duplication, and reopening through local storage.

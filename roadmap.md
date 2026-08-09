@@ -208,7 +208,7 @@ Planned commits:
 
 ## Current validation baseline
 
-- `npm test`: 50 tests passing across eleven test files.
+- `npm test`: 53 tests passing across twelve test files.
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib`: 18 tests passing.
 - Bundled template validation: four VHDL sources accepted by the bundled GHDL runtime.
 - `npm run build`: TypeScript and Vite production build passing.
