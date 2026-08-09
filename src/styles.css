@@ -131,7 +131,11 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .panel-rail.compact { height: 100%; border-top: 0; justify-content: flex-start; padding-top: 14px; }
 .panel-rail span { writing-mode: vertical-rl; text-transform: uppercase; letter-spacing: 1px; font-size: 8px; }
 .tree-root, .tree-file { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 29px; padding: 0 8px; font-size: 10px; text-align: left; }
-.tree-root b { font-size: 9px; letter-spacing: .5px; }
+.tree-root { border: 0; background: transparent; color: #c3cdd2; cursor: pointer; }
+.tree-root:hover { background: #151d21; color: #e1e8ec; }
+.tree-root:focus-visible { outline: 1px solid var(--cyan); outline-offset: -1px; }
+.tree-root svg { flex: 0 0 auto; }
+.tree-root b { min-width: 0; overflow: hidden; font-size: 9px; letter-spacing: .5px; text-overflow: ellipsis; white-space: nowrap; }
 .tree-file { border: 0; background: transparent; padding-left: 25px; color: #9aa6ae; }
 .tree-file svg { color: #6bbcc1; }
 .tree-file.active { background: #1a2227; border-left: 2px solid var(--cyan); padding-left: 23px; color: #e1e8ec; }

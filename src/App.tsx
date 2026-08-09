@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import {
-  Activity, BadgeInfo, ChevronDown, CircleStop, Cpu, FileCode2, FolderKanban, FolderOpen, Gauge,
+  Activity, BadgeInfo, ChevronDown, ChevronRight, CircleStop, Cpu, FileCode2, FolderKanban, FolderOpen, Gauge,
   Info, MoreHorizontal, Play, RotateCcw, Save, Search, Settings2, TerminalSquare, Unplug
 } from "lucide-react";
 import { boards, cycloneII } from "./board";
@@ -99,6 +99,7 @@ export default function App() {
   const [bottomTab, setBottomTab] = useState<BottomTab>("waveform");
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false);
+  const [explorerProjectExpanded, setExplorerProjectExpanded] = useState(true);
   const [projectDialog, setProjectDialog] = useState<ProjectDialog>(null);
   const [hasProject, setHasProject] = useState(() => hasInitialProject(project));
   const [activityView, setActivityView] = useState<ActivityView>(project.legacyRecovered ? "explorer" : "projects");
@@ -293,6 +294,7 @@ export default function App() {
     load(loaded);
     setHasProject(true);
     setActivityView("explorer");
+    setExplorerProjectExpanded(true);
     rememberProject(loaded);
     setProjectDialog(null);
     setProjectMenuOpen(false);
@@ -856,9 +858,19 @@ export default function App() {
         </> : <>
           <div className="panel-heading"><span>{t("explorer.title")}</span><CollapseButton direction="left" title={t("explorer.collapse")} onClick={() => setActivityView(null)} /></div>
           {hasProject ? <><div className="tree-scroll">
-            <div className="tree-root"><ChevronDown size={14} /><b>{manifest.name.toUpperCase()}</b></div>
-            {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
-            <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>{t("common.generated")}</em></button>
+            <button
+              type="button"
+              className="tree-root"
+              aria-expanded={explorerProjectExpanded}
+              onClick={() => setExplorerProjectExpanded((expanded) => !expanded)}
+            >
+              {explorerProjectExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <b>{manifest.name.toUpperCase()}</b>
+            </button>
+            {explorerProjectExpanded && <>
+              {project.sources.map((item) => <button key={item.path} className={`tree-file ${project.activePath === item.path ? "active" : ""}`} title={item.path} onClick={() => setActivePath(item.path)}><FileCode2 size={15} /><span>{fileName(item.path)}</span>{isProjectSourceDirty(project, item.path) && <i>M</i>}</button>)}
+              <button className={`tree-file ${activeIsConstraints ? "active" : ""}`} onClick={() => setActivePath(constraintsPath)}><FileCode2 size={15} /><span>{constraintsPath}</span><em>{t("common.generated")}</em></button>
+            </>}
           </div>
           <div className="files-footer"><div><span>{t("explorer.topEntity")}</span><strong>{topEntity}</strong></div></div></> : <p className="empty-list">{t("explorer.noProject")}</p>}
         </>}
