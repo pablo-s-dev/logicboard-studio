@@ -29,11 +29,11 @@ export function ProjectSwitcher({ currentPath, recentProjects, templates, onSele
   </div>;
 }
 
-export function ProjectMenu({ onNew, onOpen, onTemplates, onSaveAs, onSettings, hasProject, browserStorage = false }: {
+export function ProjectMenu({ onNew, onOpen, onTemplates, onSave, onSettings, hasProject, browserStorage = false }: {
   onNew: () => void;
   onOpen: () => void;
   onTemplates: () => void;
-  onSaveAs: () => void;
+  onSave: () => void;
   onSettings: () => void;
   hasProject: boolean;
   browserStorage?: boolean;
@@ -43,7 +43,7 @@ export function ProjectMenu({ onNew, onOpen, onTemplates, onSaveAs, onSettings, 
     <button onClick={onNew}><FolderPlus size={14} /><span><b>{t("project.new")}</b><small>{t("project.new.help")}</small></span></button>
     <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t(browserStorage ? "project.open.browserHelp" : "project.open.help")}</small></span></button>
     <button onClick={onTemplates}><LayoutTemplate size={14} /><span><b>{t("project.templates")}</b><small>{t("project.templates.help")}</small></span></button>
-    <button disabled={!hasProject} onClick={onSaveAs}><Save size={14} /><span><b>{t("project.saveAs")}</b><small>{t(browserStorage ? "project.saveAs.browserHelp" : "project.saveAs.help")}</small></span></button>
+    <button disabled={!hasProject} onClick={onSave}><Save size={14} /><span><b>{t("common.save")}</b><small>{t(browserStorage ? "project.save.browserHelp" : "project.save.help")}</small></span></button>
     <button disabled={!hasProject} onClick={onSettings}><Settings2 size={14} /><span><b>{t("project.settings")}</b><small>{t("project.settings.help")}</small></span></button>
   </div>;
 }
@@ -162,9 +162,8 @@ export function ProjectSettingsDialog({ name, boardId, topEntity, boards, entity
   </Modal>;
 }
 
-export function UnsavedChangesDialog({ projectName, saveAs, onSave, onDiscard, onCancel }: {
+export function UnsavedChangesDialog({ projectName, onSave, onDiscard, onCancel }: {
   projectName: string;
-  saveAs?: boolean;
   onSave: () => void;
   onDiscard: () => void;
   onCancel: () => void;
@@ -172,7 +171,7 @@ export function UnsavedChangesDialog({ projectName, saveAs, onSave, onDiscard, o
   const { t } = useI18n();
   return <Modal title={t("project.unsaved.title")} onCancel={onCancel}>
     <p className="modal-copy">{t("project.unsaved.question", { name: projectName })}</p>
-    <div className="modal-actions"><button className="danger" onClick={onDiscard}>{t("project.discard")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" onClick={onSave}>{saveAs ? t("project.saveAs") : t("common.save")}</button></div>
+    <div className="modal-actions"><button className="danger" onClick={onDiscard}>{t("project.discard")}</button><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" onClick={onSave}>{t("common.save")}</button></div>
   </Modal>;
 }
 

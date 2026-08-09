@@ -22,4 +22,10 @@ describe("interface localization", () => {
     expect(translate("pt-BR", "credits.title")).toBe("CRÉDITOS");
     expect(translate("en-US", "board.group.HEXES")).toBe("Seven-segment displays");
   });
+
+  it("presents project persistence as a single save action", () => {
+    expect(translate("pt-BR", "common.save")).toBe("Salvar");
+    expect(translate("pt-BR", "project.save.help")).toBe("Salve as alterações no projeto atual");
+    expect(translate("en-US", "project.save.help")).toBe("Save changes to the current project");
+  });
 });

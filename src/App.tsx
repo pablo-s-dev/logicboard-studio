@@ -304,7 +304,7 @@ export default function App() {
     setCompilationReport(null);
   };
 
-  const persistProject = async (saveAs = false) => {
+  const persistProject = async () => {
     setProjectBusy(true);
     try {
       const validationProblems = validateProjectManifest(manifest, project.sources);
@@ -313,7 +313,7 @@ export default function App() {
         return false;
       }
       const payload = { manifest, sources: project.sources };
-      const loaded = project.rootPath && !saveAs
+      const loaded = project.rootPath
         ? await saveProject(project.rootPath, payload)
         : !isDesktopApp()
           ? await saveProjectAs("", projectFolderName(manifest.name), payload)
@@ -800,7 +800,7 @@ export default function App() {
           onNew={() => { setProjectMenuOpen(false); showNewProject(); }}
           onOpen={() => { setProjectMenuOpen(false); void openExistingProject(); }}
           onTemplates={() => { setProjectMenuOpen(false); setActivityView("projects"); showNewProject(projectTemplates.find((template) => template.id !== "blank")?.id); }}
-          onSaveAs={() => { setProjectMenuOpen(false); void persistProject(true); }}
+          onSave={() => { setProjectMenuOpen(false); void persistProject(); }}
           onSettings={() => { setProjectMenuOpen(false); setProjectDialog("project-settings"); }}
           hasProject={hasProject}
           browserStorage={!isDesktopApp()}
@@ -979,7 +979,6 @@ export default function App() {
     />}
     {unsavedOpen && <UnsavedChangesDialog
       projectName={manifest.name}
-      saveAs={!project.rootPath}
       onSave={() => void continuePendingAction("save")}
       onDiscard={() => void continuePendingAction("discard")}
       onCancel={() => { pendingProjectActionRef.current = null; setUnsavedOpen(false); }}
