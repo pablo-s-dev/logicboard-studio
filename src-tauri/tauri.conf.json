@@ -17,6 +17,12 @@
     "active": true,
     "targets": "all",
     "icon": ["icons/icon.ico"],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico"
+      }
+    },
     "resources": {
       "resources/ghdl": "ghdl",
       "templates": "templates"
