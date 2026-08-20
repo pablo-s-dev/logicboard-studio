@@ -38,7 +38,8 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 
 .topbar { height: 48px; display: flex; align-items: center; border-bottom: 1px solid var(--line); background: #101418; padding: 0 12px; gap: 10px; }
 .brand { display: flex; align-items: center; gap: 8px; min-width: 205px; }
-.brand-mark { width: 29px; height: 29px; display: grid; place-items: center; color: #051113; background: var(--cyan); border-radius: 5px; box-shadow: 0 0 18px #39d0d844; }
+.brand-mark { width: 29px; height: 29px; flex: 0 0 29px; }
+.brand-mark img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 0 7px #39d0d855); }
 .brand strong { font-size: 15px; }
 .brand > span { font-size: 9px; color: #72808a; letter-spacing: 1.7px; margin-left: -4px; align-self: flex-end; margin-bottom: 10px; }
 .project-button { height: 35px; min-width: 177px; display: flex; align-items: center; gap: 9px; background: #171d21; border: 1px solid #2a3238; border-radius: 5px; padding: 0 10px; text-align: left; }

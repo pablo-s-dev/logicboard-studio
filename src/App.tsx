@@ -791,7 +791,7 @@ export default function App() {
 
   return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); if (projectSwitcherOpen) setProjectSwitcherOpen(false); }}>
     <header className="topbar">
-      <div className="brand"><div className="brand-mark"><Activity size={19} /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
+      <div className="brand"><div className="brand-mark"><img src="/logicboard-icon.svg" alt="" /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
       <div className="project-control" onClick={(event) => event.stopPropagation()}>
         <button className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{hasProject ? `${manifest.name}${projectDirty ? " •" : ""}` : t("project.none")}</b></div><ChevronDown size={14} /></button>
         {projectSwitcherOpen && <ProjectSwitcher currentPath={hasProject ? project.rootPath : null} recentProjects={recentProjects} templates={projectTemplates} onSelect={(path) => void openRecentProject(path)} onTemplate={(templateId) => { setProjectSwitcherOpen(false); showNewProject(templateId); }} />}

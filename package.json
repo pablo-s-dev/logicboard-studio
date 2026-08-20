@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "test": "vitest run",
     "tauri": "tauri",
+    "icons": "tauri icon public/logicboard-icon.svg",
     "prepare:ghdl": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-ghdl.ps1",
     "build:windows": "npm run prepare:ghdl && npm run tauri -- build"
   },

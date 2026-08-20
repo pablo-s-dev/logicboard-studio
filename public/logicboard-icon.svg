@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">LogicBoard Studio</title>
+  <defs>
+    <linearGradient id="background" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17242b"/>
+      <stop offset="1" stop-color="#091014"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="294" y1="414" x2="730" y2="610" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#73f4ee"/>
+      <stop offset="1" stop-color="#27b7d2"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="52" y="52" width="920" height="920" rx="220" fill="url(#background)"/>
+  <rect x="222" y="222" width="580" height="580" rx="118" fill="#101a20" stroke="#2b5962" stroke-width="28"/>
+
+  <g fill="#46d7dc">
+    <rect x="114" y="302" width="132" height="42" rx="21"/>
+    <rect x="114" y="408" width="132" height="42" rx="21"/>
+    <rect x="114" y="514" width="132" height="42" rx="21"/>
+    <rect x="114" y="620" width="132" height="42" rx="21"/>
+    <rect x="778" y="302" width="132" height="42" rx="21"/>
+    <rect x="778" y="408" width="132" height="42" rx="21"/>
+    <rect x="778" y="514" width="132" height="42" rx="21"/>
+    <rect x="778" y="620" width="132" height="42" rx="21"/>
+    <rect x="302" y="114" width="42" height="132" rx="21"/>
+    <rect x="408" y="114" width="42" height="132" rx="21"/>
+    <rect x="514" y="114" width="42" height="132" rx="21"/>
+    <rect x="620" y="114" width="42" height="132" rx="21"/>
+    <rect x="302" y="778" width="42" height="132" rx="21"/>
+    <rect x="408" y="778" width="42" height="132" rx="21"/>
+    <rect x="514" y="778" width="42" height="132" rx="21"/>
+    <rect x="620" y="778" width="42" height="132" rx="21"/>
+  </g>
+
+  <path d="M300 526h86l56-154 92 286 70-206h120" fill="none" stroke="url(#signal)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="300" cy="526" r="30" fill="#73f4ee"/>
+  <circle cx="724" cy="452" r="30" fill="#27b7d2"/>
+</svg>
