@@ -6,8 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-20
+
+### Added
+
+- Added an English project guide with installation, VHDL workflow, local build, icon generation, and release instructions.
+- Added a tag-driven GitHub Actions workflow that tests the application, bundles GHDL, and publishes a Windows installer.
+
 ### Changed
 
+- Standardized the workspace and packaged application on a new chip-and-waveform icon generated from one vector source.
+- Limited the Windows build command to the user-friendly NSIS setup executable.
+- Updated the application credits to link to `pablosan.netlify.app`.
 - Compacted the board schematic header so its device icon stays next to the descriptive text.
 - Replaced the user-facing Save As action with a single Save action that reuses the current destination or asks for one when necessary.
 
@@ -30,7 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added a dedicated Credits activity containing Pablo Santana de Oliveira and `pablosdev.portfolio.app`.
+- Added a dedicated Credits activity containing Pablo Santana de Oliveira and a portfolio link.
 - Added automated coverage for activity-bar selection, switching, and toggle-to-close behavior.
 - Added a reusable React collapse control with explicit left, right, up, and down directions.
 
@@ -55,7 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added a labeled template section to New Project and exposed all starter templates permanently in the project switcher.
 - Added a configurable default VHDL projects directory to application settings.
-- Added a Credits settings tab for Pablo Santana de Oliveira and `pablosdev.portfolio.app`.
+- Added a Credits settings tab for Pablo Santana de Oliveira and a portfolio link.
 
 ### Changed
 
