@@ -183,4 +183,4 @@ LogicBoard Studio currently targets one Cyclone II starter board and VHDL-2008. 
 
 ---
 
-Built by [Pablo Santana de Oliveira](https://pablosdev.portfolio.app/).
+Built by [Pablo Santana de Oliveira](https://pablosan.netlify.app/).
