@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "icons": "tauri icon public/logicboard-icon.svg",
     "prepare:ghdl": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-ghdl.ps1",
-    "build:windows": "npm run prepare:ghdl && npm run tauri -- build"
+    "build:windows": "npm run prepare:ghdl && npm run tauri -- build --bundles nsis"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
