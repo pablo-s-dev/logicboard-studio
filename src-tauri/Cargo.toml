@@ -3,6 +3,7 @@ name = "logicboard-studio"
 version = "0.6.1"
 description = "Interactive VHDL simulator for FPGA development boards"
 authors = ["LogicBoard Studio"]
+license = "MIT"
 edition = "2021"
 
 [lib]

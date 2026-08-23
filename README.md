@@ -6,6 +6,7 @@
     <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-46d7dc?style=flat-square&logo=windows&logoColor=white" />
     <img alt="VHDL 2008" src="https://img.shields.io/badge/VHDL-2008-46d7dc?style=flat-square" />
     <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-46d7dc?style=flat-square&logo=tauri&logoColor=white" />
+    <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-46d7dc?style=flat-square" /></a>
   </p>
   <p>
     <a href="../../releases/latest"><strong>Download the latest Windows release</strong></a>
@@ -167,6 +168,10 @@ The app header uses that same SVG, so the workspace branding, executable, instal
 ## Project status
 
 LogicBoard Studio currently targets one Cyclone II starter board and VHDL-2008. It analyzes and simulates designs; it does not yet synthesize a bitstream or program physical hardware. See [roadmap.md](roadmap.md) for planned work and [changelog.md](changelog.md) for completed releases.
+
+## License
+
+LogicBoard Studio is available under the [MIT License](LICENSE).
 
 ---
 

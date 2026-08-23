@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added the MIT License and declared it in the Node.js and Rust package metadata.
+
+### Changed
+
+- Refocused the public README on users and contributors by removing the maintainer-only release procedure.
+
 ## [0.6.1] - 2026-08-20
 
 ### Added
