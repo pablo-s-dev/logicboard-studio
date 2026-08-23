@@ -35,8 +35,6 @@ The easiest route is the Windows installer attached to the [latest GitHub Releas
 
 GHDL is bundled with release builds, so end users do not need to install a simulator separately. LogicBoard Studio uses Microsoft Edge WebView2, which is already present on current Windows 10 and Windows 11 installations. Until releases are code-signed, Windows SmartScreen may ask you to confirm that you trust the downloaded installer.
 
-> **Repository setup note:** the release link becomes active after this repository is pushed to GitHub and its first `v*` tag runs the included release workflow.
-
 ## Learn the workflow
 
 ### 1. Create a project
@@ -144,17 +142,6 @@ src-tauri/target/release/bundle/nsis/LogicBoard Studio_<version>_x64-setup.exe
 ```
 
 Install it like any other Windows application. The default Tauri NSIS mode installs for the current user and does not require administrator privileges.
-
-## Create a GitHub Release
-
-The workflow in `.github/workflows/release.yml` turns every pushed `v*` tag into a tested Windows release. Before tagging, update the same version in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`, move the changelog entries out of **Unreleased**, and run the checks above.
-
-```powershell
-git tag -a v0.6.1 -m "LogicBoard Studio 0.6.1"
-git push origin v0.6.1
-```
-
-GitHub Actions then installs the toolchains, runs both test suites, bundles GHDL, creates the NSIS installer, and publishes it as a release asset. Use the actual version you prepared instead of copying `v0.6.1` for every release.
 
 ## Supported board devices
 
