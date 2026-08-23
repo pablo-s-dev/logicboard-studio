@@ -136,6 +136,8 @@ export default function App() {
   const previousInputsRef = useRef(inputs);
   const lastAnalyzedSourceRef = useRef<string | null>(null);
   const analysisRevisionRef = useRef(0);
+  const projectSwitcherButtonRef = useRef<HTMLButtonElement>(null);
+  const projectActionsButtonRef = useRef<HTMLButtonElement>(null);
 
   const topEntity = manifest.topEntity;
   const selectedBoard = useMemo(() => boards.find((board) => board.id === selectedBoardId) ?? cycloneII, [selectedBoardId]);
@@ -793,10 +795,11 @@ export default function App() {
     <header className="topbar">
       <div className="brand"><div className="brand-mark"><img src="/logicboard-icon.svg" alt="" /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
       <div className="project-control" onClick={(event) => event.stopPropagation()}>
-        <button className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{hasProject ? `${manifest.name}${projectDirty ? " •" : ""}` : t("project.none")}</b></div><ChevronDown size={14} /></button>
-        {projectSwitcherOpen && <ProjectSwitcher currentPath={hasProject ? project.rootPath : null} recentProjects={recentProjects} templates={projectTemplates} onSelect={(path) => void openRecentProject(path)} onTemplate={(templateId) => { setProjectSwitcherOpen(false); showNewProject(templateId); }} />}
-        <button className="project-actions-button" title={t("project.actions")} aria-label={t("project.actions")} onClick={() => { setProjectSwitcherOpen(false); setProjectMenuOpen((open) => !open); }}><MoreHorizontal size={17} /></button>
+        <button ref={projectSwitcherButtonRef} className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{hasProject ? `${manifest.name}${projectDirty ? " •" : ""}` : t("project.none")}</b></div><ChevronDown size={14} /></button>
+        {projectSwitcherOpen && <ProjectSwitcher anchor={projectSwitcherButtonRef.current} currentPath={hasProject ? project.rootPath : null} recentProjects={recentProjects} templates={projectTemplates} onSelect={(path) => void openRecentProject(path)} onTemplate={(templateId) => { setProjectSwitcherOpen(false); showNewProject(templateId); }} />}
+        <button ref={projectActionsButtonRef} className="project-actions-button" title={t("project.actions")} aria-label={t("project.actions")} onClick={() => { setProjectSwitcherOpen(false); setProjectMenuOpen((open) => !open); }}><MoreHorizontal size={17} /></button>
         {projectMenuOpen && <ProjectMenu
+          anchor={projectActionsButtonRef.current}
           onNew={() => { setProjectMenuOpen(false); showNewProject(); }}
           onOpen={() => { setProjectMenuOpen(false); void openExistingProject(); }}
           onTemplates={() => { setProjectMenuOpen(false); setActivityView("projects"); showNewProject(projectTemplates.find((template) => template.id !== "blank")?.id); }}

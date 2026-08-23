@@ -49,14 +49,13 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .project-control { position: relative; display: flex; align-items: center; gap: 4px; }
 .project-actions-button { width: 31px; height: 35px; display: grid; place-items: center; border: 1px solid #2a3238; border-radius: 5px; background: #171d21; color: #8c99a3; }
 .project-actions-button:hover { border-color: #3d4a52; background: #20272c; color: #e7edf0; }
-.project-menu { position: absolute; z-index: 50; top: 40px; left: 0; width: 260px; padding: 5px; border: 1px solid #344149; border-radius: 7px; background: #151c20; box-shadow: 0 18px 45px #000b; }
-.project-actions-menu { left: calc(100% - 31px); }
+.project-menu { z-index: 50; overflow-y: auto; padding: 5px; border: 1px solid #344149; border-radius: 7px; background: #151c20; box-shadow: 0 18px 45px #000b; }
 .project-menu button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 7px 9px; border: 0; border-radius: 5px; background: transparent; color: #aab8be; text-align: left; }
 .project-menu button:hover { background: #202a2f; color: #d9f6f7; }
 .project-menu button > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .project-menu b { font-size: 9px; }
 .project-menu small { color: #687780; font-size: 8px; }
-.project-switcher { position: absolute; z-index: 50; top: 40px; left: 0; width: min(390px, calc(100vw - 32px)); max-height: min(560px, calc(100vh - 72px)); overflow: auto; padding: 6px; border: 1px solid #344149; border-radius: 7px; background: #151c20; box-shadow: 0 18px 45px #000b; }
+.project-switcher { z-index: 50; overflow: auto; padding: 6px; border: 1px solid #344149; border-radius: 7px; background: #151c20; box-shadow: 0 18px 45px #000b; }
 .project-switcher-heading { padding: 7px 9px; color: #718089; font-size: 7px; letter-spacing: 1px; }
 .project-switcher-template-heading { margin-top: 5px; padding-top: 11px; border-top: 1px solid #29343a; }
 .project-switcher button { width: 100%; min-height: 47px; display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 6px; padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: #93a1a8; text-align: left; }

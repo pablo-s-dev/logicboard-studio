@@ -1,13 +1,17 @@
 import { Check, FolderOpen, FolderPlus, LayoutTemplate, Save, Settings2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import type { CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import type { BoardDefinition } from "../../types";
 import type { ProjectTemplate } from "../../projects/model";
 import { projectFolderName } from "../../projects/api";
 import { useI18n } from "../../i18n";
 import type { RecentProject } from "../../projects/recent";
 import { isBrowserProjectPath } from "../../projects/browser";
+import { projectPopoverPosition, type ProjectPopoverAlignment } from "./projectPopover";
 
-export function ProjectSwitcher({ currentPath, recentProjects, templates, onSelect, onTemplate }: {
+export function ProjectSwitcher({ anchor, currentPath, recentProjects, templates, onSelect, onTemplate }: {
+  anchor: HTMLElement | null;
   currentPath: string | null;
   recentProjects: RecentProject[];
   templates: ProjectTemplate[];
@@ -16,7 +20,9 @@ export function ProjectSwitcher({ currentPath, recentProjects, templates, onSele
 }) {
   const { t } = useI18n();
   const available = templates.length ? templates : fallbackTemplates;
-  return <div className="project-switcher" onClick={(event) => event.stopPropagation()}>
+  const style = useProjectPopoverStyle(anchor, 390, "left");
+  if (!style) return null;
+  return createPortal(<div className="project-switcher" style={style} onClick={(event) => event.stopPropagation()}>
     <div className="project-switcher-heading">{t("project.recent")}</div>
     {recentProjects.length ? recentProjects.map((project) => <button key={project.rootPath} className={currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? "current" : ""} onClick={() => onSelect(project.rootPath)}>
       <span>{currentPath?.toLocaleLowerCase() === project.rootPath.toLocaleLowerCase() ? <Check size={13} /> : <FolderOpen size={13} />}</span>
@@ -26,10 +32,11 @@ export function ProjectSwitcher({ currentPath, recentProjects, templates, onSele
     {available.map((template) => <button key={template.id} onClick={() => onTemplate(template.id)}>
       <span><LayoutTemplate size={13} /></span><div><b>{t(`template.${template.id}.name`)}</b><small>{t(`template.${template.id}.description`)}</small></div>
     </button>)}
-  </div>;
+  </div>, document.body);
 }
 
-export function ProjectMenu({ onNew, onOpen, onTemplates, onSave, onSettings, hasProject, browserStorage = false }: {
+export function ProjectMenu({ anchor, onNew, onOpen, onTemplates, onSave, onSettings, hasProject, browserStorage = false }: {
+  anchor: HTMLElement | null;
   onNew: () => void;
   onOpen: () => void;
   onTemplates: () => void;
@@ -39,13 +46,52 @@ export function ProjectMenu({ onNew, onOpen, onTemplates, onSave, onSettings, ha
   browserStorage?: boolean;
 }) {
   const { t } = useI18n();
-  return <div className="project-menu project-actions-menu" onClick={(event) => event.stopPropagation()}>
+  const style = useProjectPopoverStyle(anchor, 260, "right");
+  if (!style) return null;
+  return createPortal(<div className="project-menu project-actions-menu" style={style} onClick={(event) => event.stopPropagation()}>
     <button onClick={onNew}><FolderPlus size={14} /><span><b>{t("project.new")}</b><small>{t("project.new.help")}</small></span></button>
     <button onClick={onOpen}><FolderOpen size={14} /><span><b>{t("project.open")}</b><small>{t(browserStorage ? "project.open.browserHelp" : "project.open.help")}</small></span></button>
     <button onClick={onTemplates}><LayoutTemplate size={14} /><span><b>{t("project.templates")}</b><small>{t("project.templates.help")}</small></span></button>
     <button disabled={!hasProject} onClick={onSave}><Save size={14} /><span><b>{t("common.save")}</b><small>{t(browserStorage ? "project.save.browserHelp" : "project.save.help")}</small></span></button>
     <button disabled={!hasProject} onClick={onSettings}><Settings2 size={14} /><span><b>{t("project.settings")}</b><small>{t("project.settings.help")}</small></span></button>
-  </div>;
+  </div>, document.body);
+}
+
+function useProjectPopoverStyle(anchor: HTMLElement | null, preferredWidth: number, alignment: ProjectPopoverAlignment) {
+  const [style, setStyle] = useState<CSSProperties | null>(null);
+
+  useLayoutEffect(() => {
+    if (!anchor) {
+      setStyle(null);
+      return;
+    }
+
+    const update = () => {
+      const rect = anchor.getBoundingClientRect();
+      setStyle({
+        position: "fixed",
+        ...projectPopoverPosition({
+          anchorLeft: rect.left,
+          anchorRight: rect.right,
+          anchorBottom: rect.bottom,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          preferredWidth,
+          alignment
+        })
+      });
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [alignment, anchor, preferredWidth]);
+
+  return style;
 }
 
 const fallbackTemplates: ProjectTemplate[] = [
