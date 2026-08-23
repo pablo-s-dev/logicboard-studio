@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-23
+
 ### Added
 
 - Added the MIT License and declared it in the Node.js and Rust package metadata.
