@@ -70,7 +70,7 @@ pub struct ProjectTemplate {
 }
 
 const PROJECT_TEMPLATES: [ProjectTemplate; 4] = [
-    ProjectTemplate { id: "blank", name: "Blank project", description: "A minimal top-level VHDL entity ready for editing." },
+    ProjectTemplate { id: "blank", name: "Blank project", description: "A valid top-level VHDL shell without ports or example logic." },
     ProjectTemplate { id: "led-switch-mirror", name: "LED and switch mirror", description: "Introductory combinational logic mapping switches to red LEDs." },
     ProjectTemplate { id: "button-seven-segment", name: "Buttons and seven-segment", description: "Active-low buttons select digits and status LEDs." },
     ProjectTemplate { id: "four-digit-timer", name: "Four-digit timer", description: "Clocked timer with buttons, LEDs, and four seven-segment displays." },
