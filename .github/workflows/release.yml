@@ -52,13 +52,13 @@ jobs:
       - name: Run frontend tests
         run: npm test
 
-      - name: Run Rust tests
-        working-directory: src-tauri
-        run: cargo test
-
       - name: Bundle GHDL with the application
         shell: powershell
         run: npm run prepare:ghdl
+
+      - name: Run Rust tests
+        working-directory: src-tauri
+        run: cargo test
 
       - name: Build installer and publish the release
         uses: tauri-apps/tauri-action@v1
