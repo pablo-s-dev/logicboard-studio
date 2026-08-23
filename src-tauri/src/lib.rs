@@ -13,6 +13,8 @@ mod projects;
 use projects::{create_project, list_project_templates, open_project, resolve_project_parent, save_project, save_project_as};
 
 const MAX_SESSION_STEP_NS: u64 = 250_000_000;
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -137,6 +139,16 @@ fn ghdl_path() -> PathBuf {
     PathBuf::from("ghdl")
 }
 
+fn ghdl_command() -> Command {
+    let mut command = Command::new(ghdl_path());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+}
+
 fn safe_identifier(name: &str) -> Option<&str> {
     let mut chars = name.chars();
     let first = chars.next()?;
@@ -151,7 +163,7 @@ fn safe_identifier(name: &str) -> Option<&str> {
 }
 
 fn run_ghdl(work: &Path, args: &[&str]) -> Result<Vec<String>, String> {
-    let output = Command::new(ghdl_path())
+    let output = ghdl_command()
         .current_dir(work)
         .args(args)
         .output()
@@ -176,7 +188,7 @@ fn run_ghdl(work: &Path, args: &[&str]) -> Result<Vec<String>, String> {
 }
 
 fn ghdl_version() -> Result<String, String> {
-    let output = Command::new(ghdl_path())
+    let output = ghdl_command()
         .arg("--version")
         .output()
         .map_err(|e| format!("GHDL is not available: {e}"))?;
@@ -812,7 +824,7 @@ fn start_simulation_session_inner(
         )?;
         diagnostics.extend(run_ghdl(&work, &["-e", "--std=08", "logicboard_tb"])?);
 
-        let mut child = Command::new(ghdl_path())
+        let mut child = ghdl_command()
             .current_dir(&work)
             .args(["-r", "--std=08", "logicboard_tb", "--assert-level=error"])
             .stdin(Stdio::piped())
@@ -949,13 +961,12 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::{
-        collect_samples, interactive_testbench_source, report_value, safe_source_path,
+        collect_samples, ghdl_command, interactive_testbench_source, report_value, safe_source_path,
         simulate_project, start_simulation_session_inner, step_simulation_session_inner,
         stop_simulation_session_inner, testbench_source, InputEvent, SimulationClock,
         SimulationSessions, VhdlPort, VhdlSource,
     };
     use std::collections::HashMap;
-    use std::process::Command;
 
     #[test]
     fn accepts_vhdl_files() {
@@ -1145,7 +1156,7 @@ mod tests {
 
     #[test]
     fn simulates_timer_top_with_1khz_test_constant_when_ghdl_is_available() {
-        if Command::new("ghdl").arg("--version").output().is_err() {
+        if ghdl_command().arg("--version").output().is_err() {
             eprintln!("Skipping timer_top simulation test because ghdl is not available.");
             return;
         }
@@ -1208,7 +1219,7 @@ mod tests {
 
     #[test]
     fn keeps_state_across_persistent_session_steps_when_ghdl_is_available() {
-        if Command::new("ghdl").arg("--version").output().is_err() {
+        if ghdl_command().arg("--version").output().is_err() {
             eprintln!("Skipping persistent session test because ghdl is not available.");
             return;
         }
@@ -1290,7 +1301,7 @@ end architecture;
 
     #[test]
     fn persistent_session_has_no_total_time_cap_when_ghdl_is_available() {
-        if Command::new("ghdl").arg("--version").output().is_err() {
+        if ghdl_command().arg("--version").output().is_err() {
             eprintln!("Skipping no-cap persistent session test because ghdl is not available.");
             return;
         }
