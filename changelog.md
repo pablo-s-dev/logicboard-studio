@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Refocused the public README on users and contributors by removing the maintainer-only release procedure.
+- Made the project name field start empty when creating a project.
 
 ## [0.6.1] - 2026-08-20
 

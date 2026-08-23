@@ -66,7 +66,7 @@ export function NewProjectDialog({ templates, parentPath, initialTemplateId, bro
 }) {
   const { t } = useI18n();
   const available = templates.length ? templates : fallbackTemplates;
-  const [name, setName] = useState("Meu projeto LogicBoard");
+  const [name, setName] = useState("");
   const [folderName, setFolderName] = useState(projectFolderName(name));
   const [templateId, setTemplateId] = useState(available.some((template) => template.id === initialTemplateId) ? initialTemplateId! : available[0].id);
   const [folderEdited, setFolderEdited] = useState(false);
