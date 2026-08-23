@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Made the blank template a valid VHDL shell without predefined ports, mappings, or example behavior.
+
+### Fixed
+
+- Added a Stop action for active combinational simulations so board mappings can be edited again.
+- Prevented GHDL analysis and simulation processes from opening visible terminal windows on Windows.
+
 ## [0.6.2] - 2026-08-23
 
 ### Added
