@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added a Stop action for active combinational simulations so board mappings can be edited again.
 - Prevented GHDL analysis and simulation processes from opening visible terminal windows on Windows.
+- Moved the project navbar popups into viewport-contained overlays so they no longer expand or scroll inside the navbar.
 
 ## [0.6.2] - 2026-08-23
 
