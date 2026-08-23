@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-08-23
+
 ### Changed
 
 - Made the blank template a valid VHDL shell without predefined ports, mappings, or example behavior.
