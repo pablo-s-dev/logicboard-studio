@@ -834,8 +834,8 @@ export default function App() {
         <span>{t("toolbar.clockNotice", { frequency: clockNotice.simulation })}</span>
       </div>}
       <div className="toolbar-spacer" />
-      <button className={`control ${simState === "running" && isClockedSimulation ? "quiet" : ""}`} disabled={isRunBusy} onClick={() => simState === "running" && isClockedSimulation ? stopSimulation() : void runSimulation()}>
-        {simState === "running" && isClockedSimulation ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" && isClockedSimulation ? t("toolbar.stop") : isCompiling ? t("toolbar.compiling") : isSimulating ? t("toolbar.starting") : simState === "running" ? t("toolbar.refresh") : t("toolbar.run")}
+      <button className={`control ${simState === "running" ? "quiet" : ""}`} disabled={isRunBusy} onClick={() => simState === "running" ? stopSimulation() : void runSimulation()}>
+        {simState === "running" ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" ? t("toolbar.stop") : isCompiling ? t("toolbar.compiling") : isSimulating ? t("toolbar.starting") : t("toolbar.run")}
       </button>
       <button className="icon-button" onClick={reset} title={t("toolbar.reset")}><RotateCcw size={16} /></button>
       {isClockedSimulation && <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>}
