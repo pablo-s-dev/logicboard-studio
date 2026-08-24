@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed the default project directory to `LogicBoardProjects`, without spaces, while preserving existing projects in the legacy folder.
+
+### Fixed
+
+- Prevented background and explicit GHDL analysis failures from appearing twice and removed temporary work-directory prefixes from diagnostics.
+
 ## [0.6.3] - 2026-08-23
 
 ### Changed
