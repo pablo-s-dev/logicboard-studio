@@ -174,7 +174,7 @@ fn run_ghdl(work: &Path, args: &[&str]) -> Result<Vec<String>, String> {
         .lines()
         .chain(stderr.lines())
         .filter(|line| !line.trim().is_empty())
-        .map(str::to_owned)
+        .map(|line| clean_ghdl_message(work, line))
         .collect();
     if output.status.success() {
         Ok(messages)
@@ -185,6 +185,13 @@ fn run_ghdl(work: &Path, args: &[&str]) -> Result<Vec<String>, String> {
             messages.join("\n")
         })
     }
+}
+
+fn clean_ghdl_message(work: &Path, line: &str) -> String {
+    line.strip_prefix(work.to_string_lossy().as_ref())
+        .unwrap_or(line)
+        .trim_start_matches(['/', '\\'])
+        .to_owned()
 }
 
 fn ghdl_version() -> Result<String, String> {
@@ -961,12 +968,20 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::{
-        collect_samples, ghdl_command, interactive_testbench_source, report_value, safe_source_path,
+        clean_ghdl_message, collect_samples, ghdl_command, interactive_testbench_source, report_value, safe_source_path,
         simulate_project, start_simulation_session_inner, step_simulation_session_inner,
         stop_simulation_session_inner, testbench_source, InputEvent, SimulationClock,
         SimulationSessions, VhdlPort, VhdlSource,
     };
     use std::collections::HashMap;
+    use std::path::Path;
+
+    #[test]
+    fn removes_temporary_work_directory_from_ghdl_messages() {
+        let work = Path::new(r"C:\Users\Pablo\AppData\Local\Temp\logicboard-123");
+        let message = format!(r"{}/src/top.vhd:9:4:error: missing semicolon", work.display());
+        assert_eq!(clean_ghdl_message(work, &message), "src/top.vhd:9:4:error: missing semicolon");
+    }
 
     #[test]
     fn accepts_vhdl_files() {

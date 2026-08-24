@@ -35,6 +35,7 @@ import { addRecentProject, loadRecentProjects, parentPath, projectParentKey, rec
 import { useI18n } from "./i18n";
 import { bottomPaneLimits, minimumBottomPaneHeight } from "./layout";
 import { toggleActivityView, type ActivityView } from "./activity";
+import { uniqueProblems } from "./problems";
 
 type ContextState = { target: MappingTarget; x: number; y: number; mode: MappingMode } | null;
 type PaneSizes = { explorer: number; editor: number; inspector: number; bottom: number };
@@ -167,7 +168,7 @@ export default function App() {
     return localProblems;
   }, [manifest, ports.length, project.sources]);
   const visibleProblems = useMemo(
-    () => Array.from(new Set([...localProjectProblems, ...mappingProblems, ...analysisProblems, ...runtimeProblems])),
+    () => uniqueProblems([...localProjectProblems, ...mappingProblems, ...analysisProblems, ...runtimeProblems]),
     [analysisProblems, localProjectProblems, mappingProblems, runtimeProblems]
   );
 
@@ -567,6 +568,9 @@ export default function App() {
         setCompilationReport({ ...report, status: "success", durationMs: performance.now() - startedAt });
         return true;
       }
+      analysisRevisionRef.current += 1;
+      lastAnalyzedSourceRef.current = sourceStateKey;
+      setAnalysisProblems([]);
       const { invoke } = await import("@tauri-apps/api/core");
       const result = await invoke<AnalysisResult>("analyze_project", { sources: sourcePayloads });
       setCompilationLog([...(result.diagnostics.length ? result.diagnostics : [t("compile.success")]), ...mappingProblems.map((item) => t("compile.mappingWarning", { message: item }))]);
@@ -581,7 +585,7 @@ export default function App() {
     } finally {
       setIsCompiling(false);
     }
-  }, [expandedAssignments.length, manifest.name, mappingProblems, ports, selectedBoard.device, selectedBoard.name, simulationClocks, sourcePayloads, t, topEntity, validateProject]);
+  }, [expandedAssignments.length, manifest.name, mappingProblems, ports, selectedBoard.device, selectedBoard.name, simulationClocks, sourcePayloads, sourceStateKey, t, topEntity, validateProject]);
 
   const stopSimulation = useCallback(() => {
     void stopActiveSimulationSession();
