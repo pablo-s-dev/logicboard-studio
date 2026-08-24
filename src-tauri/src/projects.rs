@@ -363,6 +363,23 @@ fn resolve_project_parent_path(preferred: Option<&Path>, default: &Path) -> Resu
     default.canonicalize().map_err(|error| format!("Could not validate default projects folder {}: {error}", default.display()))
 }
 
+fn same_path(left: &Path, right: &Path) -> bool {
+    let left = left.canonicalize().unwrap_or_else(|_| left.to_path_buf());
+    let right = right.canonicalize().unwrap_or_else(|_| right.to_path_buf());
+    #[cfg(windows)]
+    {
+        left.to_string_lossy().eq_ignore_ascii_case(&right.to_string_lossy())
+    }
+    #[cfg(not(windows))]
+    {
+        left == right
+    }
+}
+
+fn preferred_project_parent<'a>(preferred: Option<&'a Path>, legacy_default: &Path) -> Option<&'a Path> {
+    preferred.filter(|path| !same_path(path, legacy_default))
+}
+
 #[tauri::command]
 pub fn list_project_templates() -> Vec<ProjectTemplate> {
     PROJECT_TEMPLATES.to_vec()
@@ -371,7 +388,9 @@ pub fn list_project_templates() -> Vec<ProjectTemplate> {
 #[tauri::command]
 pub fn resolve_project_parent(app: tauri::AppHandle, preferred_path: Option<String>) -> Result<ProjectWorkspaceDefaults, String> {
     let documents = app.path().document_dir().map_err(|error| format!("Could not locate the Documents folder: {error}"))?;
-    let parent = resolve_project_parent_path(preferred_path.as_deref().map(Path::new), &documents.join("LogicBoard Projects"))?;
+    let legacy_default = documents.join("LogicBoard Projects");
+    let preferred = preferred_project_parent(preferred_path.as_deref().map(Path::new), &legacy_default);
+    let parent = resolve_project_parent_path(preferred, &documents.join("LogicBoardProjects"))?;
     Ok(ProjectWorkspaceDefaults { parent_path: path_for_frontend(&parent) })
 }
 
@@ -513,13 +532,24 @@ mod tests {
         let root = TestDir::new("parent-default");
         let preferred = root.0.join("preferred");
         fs::create_dir(&preferred).unwrap();
-        let default = root.0.join("Documents").join("LogicBoard Projects");
+        let default = root.0.join("Documents").join("LogicBoardProjects");
         assert_eq!(resolve_project_parent_path(Some(&preferred), &default).unwrap(), preferred.canonicalize().unwrap());
 
         let missing = root.0.join("missing");
         let resolved_default = resolve_project_parent_path(Some(&missing), &default).unwrap();
         assert!(resolved_default.is_dir());
         assert_eq!(resolved_default, default.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn recognizes_the_legacy_default_projects_folder() {
+        let root = TestDir::new("legacy-parent");
+        let legacy = root.0.join("Documents").join("LogicBoard Projects");
+        let custom = root.0.join("custom");
+        fs::create_dir_all(&legacy).unwrap();
+        fs::create_dir(&custom).unwrap();
+        assert_eq!(preferred_project_parent(Some(&legacy), &legacy), None);
+        assert_eq!(preferred_project_parent(Some(&custom), &legacy), Some(custom.as_path()));
     }
 
     #[test]

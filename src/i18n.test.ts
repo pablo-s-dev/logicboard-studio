@@ -19,6 +19,8 @@ describe("interface localization", () => {
 
   it("translates the project directory setting and credits activity", () => {
     expect(translate("pt-BR", "settings.projectDirectory")).toBe("Diretório padrão de projetos VHDL");
+    expect(translate("pt-BR", "project.location.defaultValue")).toBe("Documentos\\LogicBoardProjects");
+    expect(translate("en-US", "project.location.defaultValue")).toBe("Documents\\LogicBoardProjects");
     expect(translate("pt-BR", "credits.title")).toBe("CRÉDITOS");
     expect(translate("en-US", "board.group.HEXES")).toBe("Seven-segment displays");
   });
