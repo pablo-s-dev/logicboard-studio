@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-08-23
+
 ### Changed
 
 - Renamed the default project directory to `LogicBoardProjects`, without spaces, while preserving existing projects in the legacy folder.
