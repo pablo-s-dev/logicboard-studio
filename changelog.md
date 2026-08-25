@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-08-25
+
+### Fixed
+
+- Left the new-project folder-name field empty and independent instead of deriving it from the project name.
+
 ## [0.6.4] - 2026-08-23
 
 ### Changed
