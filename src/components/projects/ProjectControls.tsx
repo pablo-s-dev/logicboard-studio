@@ -1,10 +1,9 @@
 import { Check, FolderOpen, FolderPlus, LayoutTemplate, Save, Settings2 } from "lucide-react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { BoardDefinition } from "../../types";
 import type { ProjectTemplate } from "../../projects/model";
-import { projectFolderName } from "../../projects/api";
 import { useI18n } from "../../i18n";
 import type { RecentProject } from "../../projects/recent";
 import { isBrowserProjectPath } from "../../projects/browser";
@@ -113,19 +112,14 @@ export function NewProjectDialog({ templates, parentPath, initialTemplateId, bro
   const { t } = useI18n();
   const available = templates.length ? templates : fallbackTemplates;
   const [name, setName] = useState("");
-  const [folderName, setFolderName] = useState(projectFolderName(name));
+  const [folderName, setFolderName] = useState("");
   const [templateId, setTemplateId] = useState(available.some((template) => template.id === initialTemplateId) ? initialTemplateId! : available[0].id);
-  const [folderEdited, setFolderEdited] = useState(false);
-
-  useEffect(() => {
-    if (!folderEdited) setFolderName(projectFolderName(name));
-  }, [folderEdited, name]);
 
   const displayedParent = parentPath || t("project.location.defaultValue");
   return <Modal title={t("project.new.title")} onCancel={onCancel} footer={<div className="modal-actions"><span /><button className="secondary" onClick={onCancel}>{t("common.cancel")}</button><button className="primary" disabled={!name.trim() || (!browserStorage && (!folderName.trim() || !parentPath))} onClick={() => onCreate(name.trim(), folderName.trim(), templateId, parentPath)}>{t("project.create")}</button></div>}>
     <label className="project-field">{t("project.name")}<input autoFocus value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label>
     {browserStorage ? <div className="project-storage-note"><Save size={15} /><span><b>{t("project.browserStorage")}</b><small>{t("project.browserStorage.help")}</small></span></div> : <>
-      <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => { setFolderEdited(true); setFolderName(event.target.value); }} /></label>
+      <label className="project-field">{t("project.folderName")}<input value={folderName} maxLength={64} onChange={(event) => setFolderName(event.target.value)} /></label>
       <label className="project-field">{t("project.location")}<div className="project-location"><input readOnly value={displayedParent} /><button type="button" className="secondary" onClick={onBrowse}>{t("project.browse")}</button></div></label>
       <p className="project-location-help">{t("project.location.defaultHelp", { path: displayedParent })}</p>
       <div className="project-destination"><small>{t("project.destination")}</small><b>{joinDisplayPath(displayedParent, folderName)}</b></div>
