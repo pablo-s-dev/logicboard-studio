@@ -56,6 +56,18 @@ export function EditorPanel({ tabs, activePath, activeContent, readOnly, onSelec
           editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP, () => {
             void editor.getAction("editor.action.quickCommand")?.run();
           });
+
+          editor.onDidChangeModelContent((event) => {
+            if (event.changes.length !== 1 || !/^[a-zA-Z_]$/.test(event.changes[0].text)) return;
+
+            const model = editor.getModel();
+            const position = editor.getPosition();
+            if (!model || !position || model.getWordUntilPosition(position).word.length !== 1) return;
+
+            window.setTimeout(() => {
+              if (editor.getModel() === model) void editor.getAction("editor.action.triggerSuggest")?.run();
+            }, 0);
+          });
         }}
         onChange={(value) => !readOnly && onChange(value ?? "")}
         options={{

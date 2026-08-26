@@ -1,6 +1,9 @@
 import { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor/editor/editor.api";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
+import "monaco-editor/editor/contrib/snippet/browser/snippetController2";
+import "monaco-editor/editor/contrib/suggest/browser/suggestController";
+import "monaco-editor/editor/standalone/browser/quickAccess/standaloneCommandsQuickAccess";
 import { vhdlKeywords, vhdlLanguageDefinition, vhdlSnippets, vhdlTypes } from "./vhdlLanguage";
 
 self.MonacoEnvironment = {
