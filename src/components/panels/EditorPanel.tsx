@@ -52,6 +52,11 @@ export function EditorPanel({ tabs, activePath, activeContent, readOnly, onSelec
         value={activeContent}
         theme="logicboard-dark"
         beforeMount={configureMonaco}
+        onMount={(editor, monaco) => {
+          editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP, () => {
+            void editor.getAction("editor.action.quickCommand")?.run();
+          });
+        }}
         onChange={(value) => !readOnly && onChange(value ?? "")}
         options={{
           automaticLayout: true,
@@ -68,6 +73,9 @@ export function EditorPanel({ tabs, activePath, activeContent, readOnly, onSelec
           renderLineHighlight: "line",
           overviewRulerBorder: false,
           fixedOverflowWidgets: true,
+          quickSuggestions: { other: true, comments: false, strings: false },
+          snippetSuggestions: "top",
+          suggestOnTriggerCharacters: true,
           ariaLabel: readOnly ? t("editor.generatedView") : t("editor.source")
         }}
       />

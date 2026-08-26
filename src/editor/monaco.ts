@@ -1,7 +1,7 @@
 import { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor/editor/editor.api";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
-import { vhdlLanguageDefinition } from "./vhdlLanguage";
+import { vhdlKeywords, vhdlLanguageDefinition, vhdlSnippets, vhdlTypes } from "./vhdlLanguage";
 
 self.MonacoEnvironment = {
   getWorker: () => new EditorWorker()
@@ -20,6 +20,44 @@ export function configureMonaco(instance: typeof monaco) {
     comments: { lineComment: "--" },
     brackets: [["(", ")"], ["[", "]"]],
     autoClosingPairs: [{ open: "(", close: ")" }, { open: "[", close: "]" }, { open: "\"", close: "\"" }, { open: "'", close: "'" }]
+  });
+  instance.languages.registerCompletionItemProvider("vhdl", {
+    provideCompletionItems(model, position) {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn
+      };
+      return {
+        suggestions: [
+          ...vhdlSnippets.map((snippet) => ({
+            label: snippet.label,
+            detail: snippet.detail,
+            kind: instance.languages.CompletionItemKind.Snippet,
+            insertText: snippet.insertText,
+            insertTextRules: instance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            sortText: `0-${snippet.label}`,
+            range
+          })),
+          ...vhdlKeywords.map((keyword) => ({
+            label: keyword,
+            kind: instance.languages.CompletionItemKind.Keyword,
+            insertText: keyword,
+            sortText: `1-${keyword}`,
+            range
+          })),
+          ...vhdlTypes.map((type) => ({
+            label: type,
+            kind: instance.languages.CompletionItemKind.TypeParameter,
+            insertText: type,
+            sortText: `2-${type}`,
+            range
+          }))
+        ]
+      };
+    }
   });
   instance.editor.defineTheme("logicboard-dark", {
     base: "vs-dark",
