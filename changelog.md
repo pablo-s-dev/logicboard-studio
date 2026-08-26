@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-08-26
+
+### Changed
+
+- Removed the folder-name section from new-project creation and now derives the filesystem folder internally from the project name.
+
+### Fixed
+
+- Split recent projects and templates into equally visible sections with independent scrolling when either list grows.
+
 ## [0.6.5] - 2026-08-25
 
 ### Fixed
