@@ -4,7 +4,7 @@ const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ message: vi.fn(), open: vi.fn() }));
 
-import { createProject, projectFolderName, saveProject } from "./api";
+import { createProject, projectDestinationPath, projectFolderName, saveProject } from "./api";
 
 const project = {
   manifest: {
@@ -48,5 +48,10 @@ describe("native project API", () => {
 
   it("normalizes accents when deriving folder names", () => {
     expect(projectFolderName("Lógica Combinacional")).toBe("logica-combinacional");
+  });
+
+  it("shows the exact destination derived from the parent and project name", () => {
+    expect(projectDestinationPath("C:\\Users\\Pablo\\Documents\\LogicBoardProjects\\", "Lógica Combinacional"))
+      .toBe("C:\\Users\\Pablo\\Documents\\LogicBoardProjects\\logica-combinacional");
   });
 });

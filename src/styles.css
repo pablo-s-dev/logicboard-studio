@@ -31,13 +31,15 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .app { height: 100dvh; overflow: hidden; background: #0b0f12; }
 * { scrollbar-color: #68747b #10161a; scrollbar-width: thin; }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-track { background: #0c1114; border-left: 1px solid #1c252b; }
-*::-webkit-scrollbar-thumb { background: #5c6870; border: 2px solid #0c1114; border-radius: 8px; }
+*::-webkit-scrollbar-track { background: #0c1114; box-shadow: inset 0 0 0 1px #1c252b; }
+*::-webkit-scrollbar-thumb { background: #5c6870; background-clip: content-box; border: 2px solid transparent; border-radius: 8px; }
 *::-webkit-scrollbar-thumb:hover { background: #39d0d8; }
 *::-webkit-scrollbar-corner { background: #0c1114; }
 
 .topbar { height: 48px; display: flex; align-items: center; border-bottom: 1px solid var(--line); background: #101418; padding: 0 12px; gap: 10px; }
-.brand { display: flex; align-items: center; gap: 8px; min-width: 205px; }
+.brand { min-width: 205px; display: flex; align-items: center; gap: 8px; padding: 0; border: 0; border-radius: 5px; background: transparent; text-align: left; }
+.brand:hover { color: #e6f7f8; }
+.brand:focus-visible { outline: 1px solid #39d0d8; outline-offset: 4px; }
 .brand-mark { width: 29px; height: 29px; flex: 0 0 29px; }
 .brand-mark img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 0 7px #39d0d855); }
 .brand strong { font-size: 15px; }
@@ -153,10 +155,9 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .project-hub-current span { overflow: hidden; color: #62727a; font: 7px "IBM Plex Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .project-hub-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .project-hub-actions button { min-height: 32px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #304047; border-radius: 5px; background: #152025; color: #a9bdc3; font-size: 8px; }
-.project-hub-sections { flex: 1; min-height: 0; display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
-.project-hub-section { min-height: 0; display: flex; flex-direction: column; }
-.project-hub-section h3 { flex: 0 0 auto; margin: 6px 5px; }
-.project-hub-list { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
+.project-hub-sections { flex: 1; min-height: 0; overflow: auto; margin-top: 10px; scrollbar-gutter: stable; }
+.project-hub-section + .project-hub-section { margin-top: 8px; }
+.project-hub-section h3 { margin: 6px 5px; }
 .project-hub-list > p { margin: 7px 5px; color: #5f6d75; font-size: 8px; }
 .project-hub-item { width: 100%; min-height: 45px; display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 6px; padding: 6px; border: 0; border-radius: 5px; background: transparent; color: #65c9ce; text-align: left; }
 .project-hub-item:hover { background: #172126; }
@@ -482,7 +483,12 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .project-location button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .project-location input { color: #8fa0a8; }
 .project-location button { min-width: 88px; border: 1px solid #344149; border-radius: 5px; background: #172025; color: #b9c7cc; font-size: 9px; }
-.project-location-help { margin: -5px 0 10px; color: #728089; font-size: 9px; line-height: 14px; }
+.project-destination { display: flex; align-items: flex-start; gap: 10px; margin: -2px 0 13px; padding: 11px; border: 1px solid #31545b; border-radius: 6px; background: #102126; color: #5bd5dc; }
+.project-destination > svg { flex: 0 0 auto; margin-top: 1px; }
+.project-destination span { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.project-destination b { color: #bce9eb; font-size: 8px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
+.project-destination code { overflow-wrap: anywhere; color: #d5e5e8; font: 9px/14px "IBM Plex Mono", monospace; }
+.project-destination small { color: #718991; font-size: 8px; line-height: 12px; }
 .project-storage-note { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 13px; padding: 10px 11px; border: 1px solid #2a4148; border-radius: 5px; background: #102026; color: #69dce1; }
 .project-storage-note span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .project-storage-note b { color: #b8e8eb; font-size: 9px; font-weight: 500; }

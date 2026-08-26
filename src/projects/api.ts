@@ -66,3 +66,9 @@ export function projectFolderName(name: string) {
   const normalized = name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   return normalized.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64) || "logicboard-project";
 }
+
+export function projectDestinationPath(parentPath: string, projectName: string) {
+  const parent = parentPath.replace(/[\\/]+$/, "");
+  const separator = parent.includes("\\") ? "\\" : "/";
+  return `${parent}${separator}${projectFolderName(projectName)}`;
+}

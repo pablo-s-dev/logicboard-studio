@@ -6,6 +6,7 @@ describe("interface localization", () => {
     expect(resolveLanguage(null)).toBe("pt-BR");
     expect(resolveLanguage("invalid")).toBe("pt-BR");
     expect(translate("pt-BR", "toolbar.run")).toBe("Executar");
+    expect(translate("pt-BR", "brand.home")).toBe("Voltar ao início");
   });
 
   it("preserves an explicit English preference", () => {
@@ -21,6 +22,8 @@ describe("interface localization", () => {
     expect(translate("pt-BR", "settings.projectDirectory")).toBe("Diretório padrão de projetos VHDL");
     expect(translate("pt-BR", "project.location.defaultValue")).toBe("Documentos\\LogicBoardProjects");
     expect(translate("en-US", "project.location.defaultValue")).toBe("Documents\\LogicBoardProjects");
+    expect(translate("pt-BR", "project.destination")).toBe("Novo projeto será salvo em");
+    expect(translate("en-US", "project.destination")).toBe("New project will be saved to");
     expect(translate("pt-BR", "credits.title")).toBe("CRÉDITOS");
     expect(translate("en-US", "board.group.HEXES")).toBe("Seven-segment displays");
   });

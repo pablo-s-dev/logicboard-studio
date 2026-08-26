@@ -6,6 +6,7 @@ type Variables = Record<string, string | number>;
 
 const ptBR: Record<string, string> = {
   "language.name": "Português (Brasil)",
+  "brand.home": "Voltar ao início",
   "settings.title": "Configurações",
   "settings.general": "Geral",
   "settings.credits": "Créditos",
@@ -38,9 +39,10 @@ const ptBR: Record<string, string> = {
   "project.name": "Nome do projeto",
   "project.location": "Diretório de projetos VHDL",
   "project.location.defaultValue": "Documentos\\LogicBoardProjects",
-  "project.location.defaultHelp": "Diretório padrão: {{path}}. Uma nova subpasta será criada dentro dele.",
   "project.browse": "Procurar…",
-  "project.location.help": "Uma nova subpasta será criada dentro do diretório escolhido.",
+  "project.destination": "Novo projeto será salvo em",
+  "project.destination.pending": "Digite o nome do projeto para ver o caminho completo.",
+  "project.destination.help": "A pasta é criada automaticamente a partir do nome do projeto.",
   "project.create": "Criar projeto",
   "project.actions": "Ações do projeto",
   "project.recent": "PROJETOS RECENTES",
@@ -219,6 +221,7 @@ const ptBR: Record<string, string> = {
 
 const enUS: Record<string, string> = {
   "language.name": "English (United States)",
+  "brand.home": "Back to start",
   "settings.title": "Settings", "settings.language": "Interface language", "settings.language.help": "This preference is saved on this computer.", "settings.apply": "Apply",
   "common.cancel": "Cancel", "common.save": "Save", "common.close": "Close dialog", "common.generated": "generated", "common.readOnly": "read-only", "common.modified": "modified", "common.current": "current",
   "project.label": "PROJECT", "project.new": "New Project", "project.new.help": "Blank or from a template", "project.open": "Open Project", "project.open.help": "Select a project folder", "project.save.help": "Save changes to the current project", "project.save.browserHelp": "Save changes in this browser", "project.settings": "Project Settings", "project.settings.help": "Name, board, and top entity", "project.new.title": "New LogicBoard Project", "project.name": "Project name", "project.openExisting": "Open existing", "project.chooseLocation": "Choose location…", "project.targetBoard": "Target board", "project.topEntity": "Top entity", "project.unsaved.title": "Unsaved changes", "project.unsaved.question": "Save changes to {{name}} before continuing?", "project.discard": "Discard", "project.save.title": "Save project (Ctrl+S)", "project.desktopOnly": "Project folders are available only in the Tauri desktop application.", "project.error.title": "LogicBoard project error", "assignment.remove.title": "Remove assignment", "assignment.remove.question": "Remove the assignment for {{label}}? This action is only applied after confirmation.", "assignment.remove.confirm": "Remove assignment",
@@ -253,9 +256,10 @@ Object.assign(enUS, {
   "editor.empty": "Select a file in Explorer to open the editor.",
   "project.location": "VHDL projects directory",
   "project.location.defaultValue": "Documents\\LogicBoardProjects",
-  "project.location.defaultHelp": "Default directory: {{path}}. A new subfolder will be created inside it.",
   "project.browse": "Browse…",
-  "project.location.help": "A new subfolder will be created inside the selected directory.",
+  "project.destination": "New project will be saved to",
+  "project.destination.pending": "Enter the project name to see the complete path.",
+  "project.destination.help": "The folder is created automatically from the project name.",
   "project.create": "Create project",
   "project.actions": "Project actions",
   "project.recent": "RECENT PROJECTS",

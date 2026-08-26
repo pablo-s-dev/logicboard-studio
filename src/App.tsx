@@ -28,7 +28,7 @@ import type { Assignment, BoardEndpoint, EntityPort, MappingMode, MappingTarget,
 import { parseEntityPorts, previewOutputs } from "./vhdl";
 import { chooseProjectFolder, createProject, isDesktopApp, listTemplates, openProject, projectFolderName, resolveProjectParent, saveProject, saveProjectAs, showProjectError } from "./projects/api";
 import { useProjectWorkspace } from "./projects/useProjectWorkspace";
-import { hasInitialProject, validateProjectManifest } from "./projects/model";
+import { hasInitialProject, untitledProject, validateProjectManifest } from "./projects/model";
 import { isProjectSourceDirty, shouldContinueProjectAction } from "./projects/model";
 import type { LoadedProject, ProjectTemplate } from "./projects/model";
 import { addRecentProject, loadRecentProjects, parentPath, projectParentKey, recentProjectsKey } from "./projects/recent";
@@ -85,7 +85,7 @@ function visualEndpointValue(endpoint: BoardEndpoint, inputs: Record<string, boo
 export default function App() {
   const { t } = useI18n();
   const workspace = useProjectWorkspace();
-  const { project, manifest, assignments, setAssignments, setBoardId, setManifest, dirty: projectDirty, activeIsConstraints,
+  const { project, setProject, manifest, assignments, setAssignments, setBoardId, setManifest, dirty: projectDirty, activeIsConstraints,
     activeSource, topSource, entityNames, setActivePath, closePath, updateActiveContent, load, markSaved, sourcePayloads, sourceStateKey, constraintsPath } = workspace;
   const source = topSource?.content ?? "";
   const selectedBoardId = manifest.boardId;
@@ -386,6 +386,18 @@ export default function App() {
   const showNewProject = (templateId?: string) => runProjectAction(async () => {
     setInitialTemplateId(templateId);
     setProjectDialog("new");
+  });
+
+  const returnToStart = () => runProjectAction(async () => {
+    reset();
+    setProject(untitledProject());
+    setHasProject(false);
+    setActivityView("projects");
+    setProjectDialog(null);
+    setAnalysisProblems([]);
+    setRuntimeProblems([]);
+    setCompilationLog([]);
+    setCompilationReport(null);
   });
 
   const createNewProject = async (name: string, templateId: string, parent: string) => {
@@ -797,7 +809,7 @@ export default function App() {
 
   return <div className="app" onClick={() => { if (context) setContext(null); if (projectMenuOpen) setProjectMenuOpen(false); if (projectSwitcherOpen) setProjectSwitcherOpen(false); }}>
     <header className="topbar">
-      <div className="brand"><div className="brand-mark"><img src="/logicboard-icon.svg" alt="" /></div><strong>LogicBoard</strong><span>STUDIO</span></div>
+      <button type="button" className="brand" title={t("brand.home")} aria-label={t("brand.home")} onClick={returnToStart}><div className="brand-mark"><img src="/logicboard-icon.svg" alt="" /></div><strong>LogicBoard</strong><span>STUDIO</span></button>
       <div className="project-control" onClick={(event) => event.stopPropagation()}>
         <button ref={projectSwitcherButtonRef} className="project-button" disabled={projectBusy} onClick={() => { setProjectMenuOpen(false); setProjectSwitcherOpen((open) => !open); }}><FolderOpen size={16} /><div><small>{t("project.label")}</small><b>{hasProject ? `${manifest.name}${projectDirty ? " •" : ""}` : t("project.none")}</b></div><ChevronDown size={14} /></button>
         {projectSwitcherOpen && <ProjectSwitcher anchor={projectSwitcherButtonRef.current} currentPath={hasProject ? project.rootPath : null} recentProjects={recentProjects} templates={projectTemplates} onSelect={(path) => void openRecentProject(path)} onTemplate={(templateId) => { setProjectSwitcherOpen(false); showNewProject(templateId); }} />}
