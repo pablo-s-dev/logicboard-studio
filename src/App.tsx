@@ -388,11 +388,11 @@ export default function App() {
     setProjectDialog("new");
   });
 
-  const createNewProject = async (name: string, folderName: string, templateId: string, parent: string) => {
+  const createNewProject = async (name: string, templateId: string, parent: string) => {
     setProjectDialog(null);
     setProjectBusy(true);
     try {
-      replaceProject(await createProject(parent, folderName, templateId, name));
+      replaceProject(await createProject(parent, templateId, name));
       setInitialTemplateId(undefined);
     } catch (error) {
       reportProjectError(error);
@@ -958,7 +958,7 @@ export default function App() {
       browserStorage={!isDesktopApp()}
       onCancel={() => setProjectDialog(null)}
       onBrowse={() => void browseProjectParent()}
-      onCreate={(name, folderName, templateId, parent) => void createNewProject(name, folderName, templateId, parent)}
+      onCreate={(name, templateId, parent) => void createNewProject(name, templateId, parent)}
     />}
     {projectDialog === "project-settings" && <ProjectSettingsDialog
       name={manifest.name}

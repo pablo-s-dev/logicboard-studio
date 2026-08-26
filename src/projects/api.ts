@@ -55,9 +55,10 @@ export async function saveProjectAs(parentPath: string, folderName: string, proj
   return invoke<LoadedProject>("save_project_as", { parentPath, folderName, project });
 }
 
-export async function createProject(parentPath: string, folderName: string, templateId: string, projectName: string) {
+export async function createProject(parentPath: string, templateId: string, projectName: string) {
   if (!isDesktopApp()) return createBrowserProject(projectName, templateId);
   requireDesktop();
+  const folderName = projectFolderName(projectName);
   return invoke<LoadedProject>("create_project", { parentPath, folderName, templateId, projectName });
 }
 
