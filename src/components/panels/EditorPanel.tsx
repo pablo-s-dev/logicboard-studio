@@ -53,8 +53,22 @@ export function EditorPanel({ tabs, activePath, activeContent, readOnly, onSelec
         theme="logicboard-dark"
         beforeMount={configureMonaco}
         onMount={(editor, monaco) => {
-          editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP, () => {
+          const openCommandPalette = () => {
+            editor.focus();
             void editor.getAction("editor.action.quickCommand")?.run();
+          };
+          const interceptCommandPalette = (event: KeyboardEvent) => {
+            if (!(event.ctrlKey || event.metaKey) || !event.shiftKey || event.key.toLowerCase() !== "p") return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            openCommandPalette();
+          };
+
+          editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP, openCommandPalette);
+          window.addEventListener("keydown", interceptCommandPalette, true);
+          editor.onDidDispose(() => {
+            window.removeEventListener("keydown", interceptCommandPalette, true);
           });
 
           editor.onDidChangeModelContent((event) => {
