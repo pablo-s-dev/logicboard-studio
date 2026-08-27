@@ -8,6 +8,10 @@ use std::{
     sync::Mutex,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
+#[cfg(windows)]
+use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+#[cfg(windows)]
+use windows_core::Interface;
 
 mod projects;
 use projects::{create_project, list_project_templates, open_project, resolve_project_parent, save_project, save_project_as};
@@ -947,6 +951,31 @@ fn stop_simulation_session(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            #[cfg(windows)]
+            {
+                use tauri::Manager;
+
+                let main_window = app
+                    .get_webview_window("main")
+                    .ok_or("main webview window is unavailable")?;
+                main_window.with_webview(|webview| unsafe {
+                    let core_webview = webview
+                        .controller()
+                        .CoreWebView2()
+                        .expect("WebView2 core is unavailable");
+                    let settings = core_webview
+                        .Settings()
+                        .expect("WebView2 settings are unavailable");
+                    if let Ok(settings3) = settings.cast::<ICoreWebView2Settings3>() {
+                        settings3
+                            .SetAreBrowserAcceleratorKeysEnabled(false)
+                            .expect("could not disable WebView2 browser accelerators");
+                    }
+                })?;
+            }
+            Ok(())
+        })
         .manage(SimulationSessions::default())
         .invoke_handler(tauri::generate_handler![
             analyze_project,
