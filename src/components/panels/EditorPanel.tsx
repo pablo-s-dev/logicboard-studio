@@ -100,7 +100,7 @@ export function EditorPanel({ tabs, activePath, activeContent, readOnly, onSelec
           overviewRulerBorder: false,
           fixedOverflowWidgets: true,
           quickSuggestions: { other: true, comments: false, strings: false },
-          snippetSuggestions: "top",
+          snippetSuggestions: "bottom",
           suggestOnTriggerCharacters: true,
           ariaLabel: readOnly ? t("editor.generatedView") : t("editor.source")
         }}

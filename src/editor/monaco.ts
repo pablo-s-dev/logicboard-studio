@@ -35,27 +35,27 @@ export function configureMonaco(instance: typeof monaco) {
       };
       return {
         suggestions: [
-          ...vhdlSnippets.map((snippet) => ({
-            label: snippet.label,
-            detail: snippet.detail,
-            kind: instance.languages.CompletionItemKind.Snippet,
-            insertText: snippet.insertText,
-            insertTextRules: instance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            sortText: `0-${snippet.label}`,
-            range
-          })),
           ...vhdlKeywords.map((keyword) => ({
             label: keyword,
             kind: instance.languages.CompletionItemKind.Keyword,
             insertText: keyword,
-            sortText: `1-${keyword}`,
+            sortText: `0-${keyword}`,
             range
           })),
           ...vhdlTypes.map((type) => ({
             label: type,
             kind: instance.languages.CompletionItemKind.TypeParameter,
             insertText: type,
-            sortText: `2-${type}`,
+            sortText: `1-${type}`,
+            range
+          })),
+          ...vhdlSnippets.map((snippet) => ({
+            label: { label: snippet.label, description: "Snippet" },
+            detail: snippet.detail,
+            kind: instance.languages.CompletionItemKind.Snippet,
+            insertText: snippet.insertText,
+            insertTextRules: instance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            sortText: `9-${snippet.label}`,
             range
           }))
         ]
