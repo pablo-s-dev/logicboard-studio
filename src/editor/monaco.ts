@@ -1,9 +1,18 @@
 import { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor/editor/editor.api";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
+import "monaco-editor/editor/contrib/bracketMatching/browser/bracketMatching";
+import "monaco-editor/editor/contrib/comment/browser/comment";
+import "monaco-editor/editor/contrib/find/browser/findController";
+import "monaco-editor/editor/contrib/indentation/browser/indentation";
+import "monaco-editor/editor/contrib/lineSelection/browser/lineSelection";
+import "monaco-editor/editor/contrib/linesOperations/browser/linesOperations";
+import "monaco-editor/editor/contrib/multicursor/browser/multicursor";
 import "monaco-editor/editor/contrib/snippet/browser/snippetController2";
 import "monaco-editor/editor/contrib/suggest/browser/suggestController";
+import "monaco-editor/editor/contrib/wordOperations/browser/wordOperations";
 import "monaco-editor/editor/standalone/browser/quickAccess/standaloneCommandsQuickAccess";
+import "monaco-editor/editor/standalone/browser/quickAccess/standaloneGotoLineQuickAccess";
 import { vhdlKeywords, vhdlLanguageDefinition, vhdlSnippets, vhdlTypes } from "./vhdlLanguage";
 
 self.MonacoEnvironment = {
