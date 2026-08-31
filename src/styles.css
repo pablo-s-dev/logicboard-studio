@@ -256,7 +256,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .device-row[data-count="4"] { grid-template-columns: repeat(4, max-content); }
 .device-row[data-count="3"] { grid-template-columns: repeat(3, max-content); }
 .display-row { width: max-content; max-width: 100%; display: grid; grid-template-columns: repeat(4, 31px); gap: 5px; align-items: center; justify-content: start; }
-.board-section.seven-segment { padding: 8px 7px; }
+.board-section.seven-segment { padding: 12px; }
 .board-section.seven-segment h3 { margin-bottom: 6px; }
 .hex-cluster { order: -2; width: max-content; }
 .hex-unit { width: 31px; min-width: 31px; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 3px; border: 1px solid #202c32; border-radius: 5px; background: #10171b; }
