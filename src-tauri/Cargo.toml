@@ -1,6 +1,6 @@
 [package]
 name = "logicboard-studio"
-version = "0.6.6"
+version = "0.7.0"
 description = "Interactive VHDL simulator for FPGA development boards"
 authors = ["LogicBoard Studio"]
 license = "MIT"
