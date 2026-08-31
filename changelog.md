@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-31
+
+### Added
+
+- Added VHDL autocomplete with contextual suggestions, labelled snippets, and common VS Code editor shortcuts.
+- Added a real simulation restart flow that recreates the GHDL session from the beginning.
+
+### Changed
+
+- Expanded the seven-segment display group's outer padding for clearer visual separation.
+- Kept the Windows install directory compact while showing the human-readable `LogicBoard Studio` name in installed apps.
+
+### Fixed
+
+- Prevented delayed responses from an old simulation session from overwriting a restarted session.
+- Routed `Ctrl+Shift+P` to Monaco's command palette instead of the browser print action.
+
 ## [0.6.6] - 2026-08-26
 
 ### Changed
