@@ -121,6 +121,7 @@ export default function App() {
   const [compilationReport, setCompilationReport] = useState<CompilationReport | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
   const [simPace, setSimPace] = useState(1);
   const timeRef = useRef(0);
   const simulatedTimeNsRef = useRef(0);
@@ -263,10 +264,9 @@ export default function App() {
     }
   }, []);
 
-  const reset = () => {
-    void stopActiveSimulationSession();
+  const clearSimulationState = useCallback((resetBoardInputs = true) => {
     setSimState("stopped");
-    setInputs({ KEY0: true, KEY1: true, KEY2: true, KEY3: true });
+    if (resetBoardInputs) setInputs({ KEY0: true, KEY1: true, KEY2: true, KEY3: true });
     setSimulatedOutputs(null);
     setWaveform([]);
     timeRef.current = 0;
@@ -279,7 +279,13 @@ export default function App() {
     pendingInputEventsRef.current = [];
     initialInputPortValuesRef.current = {};
     setSimPace(1);
-  };
+  }, []);
+
+  const resetSimulation = useCallback(async () => {
+    const stopping = stopActiveSimulationSession();
+    clearSimulationState();
+    await stopping;
+  }, [clearSimulationState, stopActiveSimulationSession]);
 
   const reportProjectError = (error: unknown, blocking = true) => {
     setRuntimeProblems([String(error)]);
@@ -293,7 +299,7 @@ export default function App() {
   };
 
   const replaceProject = (loaded: LoadedProject) => {
-    reset();
+    void resetSimulation();
     load(loaded);
     setHasProject(true);
     setActivityView("explorer");
@@ -389,7 +395,7 @@ export default function App() {
   });
 
   const returnToStart = () => runProjectAction(async () => {
-    reset();
+    void resetSimulation();
     setProject(untitledProject());
     setHasProject(false);
     setActivityView("projects");
@@ -671,9 +677,22 @@ export default function App() {
     } finally { setIsSimulating(false); }
   }, [appendSimulationSamples, appendWaveSample, compileProject, inputPortValues, ports, recordPace, simulationClocks, source, sourcePayloads, stopActiveSimulationSession, t, topEntity]);
 
+  const restartSimulation = useCallback(async () => {
+    setIsRestarting(true);
+    try {
+      const stopping = stopActiveSimulationSession();
+      clearSimulationState(false);
+      await stopping;
+      await runSimulation();
+    } finally {
+      setIsRestarting(false);
+    }
+  }, [clearSimulationState, runSimulation, stopActiveSimulationSession]);
+
   const updateRunningSimulation = useCallback(async () => {
     if (simulationAdvanceInFlightRef.current) return;
     simulationAdvanceInFlightRef.current = true;
+    let sessionId: string | null = null;
     try {
       if (!isTauriApp()) {
         const previewValues = previewOutputs(source, inputPortValues, ports);
@@ -683,10 +702,8 @@ export default function App() {
         return;
       }
       const { invoke } = await import("@tauri-apps/api/core");
-      const sessionId = simulationSessionIdRef.current;
-      if (!sessionId) {
-        throw new Error(t("simulation.notRunning"));
-      }
+      sessionId = simulationSessionIdRef.current;
+      if (!sessionId) return;
       const previousTimeNs = simulatedTimeNsRef.current;
       const wallNowMs = performance.now();
       const durationNs = currentSimulationTargetNs(wallNowMs);
@@ -698,6 +715,7 @@ export default function App() {
         targetTimeNs: durationNs,
         inputEvents: readyEvents
       });
+      if (simulationSessionIdRef.current !== sessionId) return;
       const doneWallMs = performance.now();
       simulatedTimeNsRef.current = result.simulatedTimeNs;
       recordPace(result.simulatedTimeNs, doneWallMs);
@@ -706,6 +724,7 @@ export default function App() {
       setCompilationLog((old) => result.diagnostics.length ? [...old, "", ...result.diagnostics] : old);
       appendSimulationSamples(result.samples.filter((sample) => sample.timeNs > previousTimeNs));
     } catch (error) {
+      if (sessionId !== simulationSessionIdRef.current) return;
       const message = String(error);
       void stopActiveSimulationSession();
       setRuntimeProblems([message]);
@@ -790,9 +809,9 @@ export default function App() {
     "--inspector-width": `${collapsed.inspector ? 34 : paneSizes.inspector}px`,
     "--bottom-height": `${collapsed.bottom ? 34 : paneSizes.bottom}px`
   } as CSSProperties;
-  const isRunBusy = isCompiling || isSimulating;
+  const isRunBusy = isCompiling || isSimulating || isRestarting;
   const isClockedSimulation = simulationClocks.length > 0;
-  const statusLabel = isCompiling ? t("status.compiling") : isSimulating ? t("status.starting") : simState === "stopped" ? t("status.ready") : isClockedSimulation ? t("status.running") : t("status.interactive");
+  const statusLabel = isCompiling ? t("status.compiling") : isSimulating || isRestarting ? t("status.starting") : simState === "stopped" ? t("status.ready") : isClockedSimulation ? t("status.running") : t("status.interactive");
   const paceLabel = simState === "running"
     ? simPace < speed * 0.9
       ? t("pace.behind", { pace: simPace.toFixed(2) })
@@ -840,7 +859,7 @@ export default function App() {
             value={selectedBoardId}
             onChange={(event) => {
               setBoardId(event.target.value);
-              reset();
+              void resetSimulation();
             }}
             title={boards.length === 1 ? t("toolbar.onlyBoard") : t("toolbar.changeBoard")}
           >
@@ -856,7 +875,7 @@ export default function App() {
       <button className={`control ${simState === "running" ? "quiet" : ""}`} disabled={isRunBusy} onClick={() => simState === "running" ? stopSimulation() : void runSimulation()}>
         {simState === "running" ? <CircleStop size={16} /> : <Play size={16} fill="currentColor" />}{simState === "running" ? t("toolbar.stop") : isCompiling ? t("toolbar.compiling") : isSimulating ? t("toolbar.starting") : t("toolbar.run")}
       </button>
-      <button className="icon-button" onClick={reset} title={t("toolbar.reset")}><RotateCcw size={16} /></button>
+      <button className="icon-button" disabled={isRunBusy} onClick={() => void restartSimulation()} title={t("toolbar.reset")}><RotateCcw size={16} /></button>
       {isClockedSimulation && <label className="speed"><Gauge size={15} /><select value={speed} onChange={(event) => changeSpeed(Number(event.target.value))}><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>}
     </div>}
 
@@ -979,7 +998,7 @@ export default function App() {
       boards={boards}
       entityNames={entityNames}
       onCancel={() => setProjectDialog(null)}
-      onSave={(settings) => { setManifest(settings); reset(); setProjectDialog(null); }}
+      onSave={(settings) => { setManifest(settings); void resetSimulation(); setProjectDialog(null); }}
     />}
     {projectDialog === "application-settings" && <ApplicationSettingsDialog
       projectParent={projectParent}
