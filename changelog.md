@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-02
+
+### Changed
+
+- Standardized the Windows installer and application surfaces on the visible name `LogicBoard Studio` while keeping the technical installation folder and upgrade identifiers compact.
+
 ## [0.7.0] - 2026-08-31
 
 ### Added
