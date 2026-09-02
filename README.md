@@ -139,7 +139,7 @@ npm run build:windows
 `build:windows` finds GHDL on `PATH`, through `GHDL_HOME`, or in the WinGet package directory. It copies that distribution into the Tauri resources and creates an NSIS setup executable at:
 
 ```text
-src-tauri/target/release/bundle/nsis/LogicBoardStudio_<version>_x64-setup.exe
+src-tauri/target/release/bundle/nsis/LogicBoard Studio_<version>_x64-setup.exe
 ```
 
 Install it like any other Windows application. The default Tauri NSIS mode installs for the current user and does not require administrator privileges.
