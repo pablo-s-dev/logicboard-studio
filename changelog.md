@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-09-02
+
+### Changed
+
+- Removed the simulation-mode left-click tooltip so board controls stay unobstructed while interacting.
+
+### Fixed
+
+- Scoped board control styles so Monaco's native search widget keeps its dimensions and remains clickable.
+- Prevented Monaco hover hints from covering the find-widget controls.
+
 ## [0.7.1] - 2026-09-02
 
 ### Changed
