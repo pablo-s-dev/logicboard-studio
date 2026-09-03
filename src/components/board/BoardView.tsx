@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Cpu } from "lucide-react";
@@ -66,6 +66,10 @@ export const BoardView = memo(function BoardView({ board, expandedAssignments, a
       window.removeEventListener("scroll", update, true);
     };
   }, [tooltip]);
+
+  useEffect(() => {
+    if (!assignmentEnabled) setTooltip(null);
+  }, [assignmentEnabled]);
 
   return <div className={`board-shell ${assignmentEnabled ? "" : "simulation-running"}`}>
     <div className="board-canvas">
@@ -192,14 +196,12 @@ function BoardDevice({ endpoint, mapped, assignment, on, assignmentEnabled, setT
   onInput: (endpoint: BoardEndpoint, next: boolean) => void;
 }) {
   const { t } = useI18n();
-  const isInteractiveInput = endpoint.direction === "in" && (endpoint.kind === "switch" || endpoint.kind === "button");
-  const runningTooltip = isInteractiveInput ? t("board.interact") : null;
   const physicalPin = endpoint.pin ? `PIN_${endpoint.pin}` : t("board.pinUnknown");
   const tooltip = assignmentEnabled
     ? assignment
       ? t("board.mapped", { label: endpoint.label, port: assignment.portId, pin: physicalPin, instruction: t("board.mapPin") })
       : t("board.unmapped", { label: endpoint.label, pin: physicalPin, instruction: t("board.mapPin") })
-    : runningTooltip;
+    : null;
   const common = {
     onContextMenu: (event: React.MouseEvent) => {
       event.preventDefault();

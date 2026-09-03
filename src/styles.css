@@ -198,6 +198,9 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .editor-wrap { position: relative; display: flex; flex: 1; overflow: hidden; padding-top: 0; }
 .editor-wrap.read-only { background: #0f1518; }
 .monaco-wrap { min-height: 0; }
+/* Monaco's action hover can cover the find controls at the top edge. Keep the
+   native find widget interactive by hiding only that compact hint while it is open. */
+.editor-wrap:has(.find-widget.visible) .context-view .monaco-hover.workbench-hover.compact { display: none !important; }
 .editor-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #4f5d65; font-size: 10px; }
 .editor-empty svg { color: #38545b; }
 
@@ -267,37 +270,37 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .board-section.clock { order: -1; }
 
 .mapped { outline: 1px solid #44e0e9 !important; outline-offset: 2px; }
-.seven-display.mapped { outline: 0 !important; }
+.board-shell .seven-display.mapped { outline: 0 !important; }
 .clock-chip { min-width: 58px; min-height: 38px; border: 1px solid #46505a; background: #171f24; color: #d5dde1; border-radius: 4px; font: 10px "IBM Plex Mono", monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .clock-chip span { color: #72808a; font-size: 7px; }
 
-.led-unit, .toggle, .push, .seven-display { border: 1px solid #27323a; background: #121a1f; min-width: 39px; min-height: 42px; padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #c0d7ce; font: 8px "LogicBoard Mono", monospace; border-radius: 4px; cursor: default; }
-.led-unit:hover, .toggle:hover, .push:hover, .clock-chip:hover, .seven-display:hover { border-color: #39d0d8 !important; background: #172229; }
+.board-shell .led-unit, .board-shell .toggle, .board-shell .push, .board-shell .seven-display { border: 1px solid #27323a; background: #121a1f; min-width: 39px; min-height: 42px; padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #c0d7ce; font: 8px "LogicBoard Mono", monospace; border-radius: 4px; cursor: default; }
+.board-shell .led-unit:hover, .board-shell .toggle:hover, .board-shell .push:hover, .board-shell .clock-chip:hover, .board-shell .seven-display:hover { border-color: #39d0d8 !important; background: #172229; }
 .simulation-running .readonly-output { cursor: default; }
 .simulation-running .readonly-output:hover { border-color: #27323a !important; background: #121a1f; }
 .simulation-running .clock-chip.readonly-output:hover { border-color: #46505a !important; background: #171f24; }
-.push:active, .compile-button:active, .control:active, .icon-button:active, .tree-file:active, .context-options button:active { transform: translateY(1px) scale(.98); box-shadow: var(--focus-ring); }
-.led-unit, .toggle, .push, .clock-chip, .seven-display, .compile-button, .control, .icon-button, .tree-file, .context-options button { transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease; }
-.led-unit i { width: 16px; height: 16px; border-radius: 50%; background: #342420; border: 1px solid #9c6f64; box-shadow: inset 0 0 4px #000; }
-.led-unit.on.red i { background: var(--red); box-shadow: 0 0 12px #ff3a2f, inset 0 0 3px #fff; }
-.led-unit.green i { background: #18372c; border-color: #598d78; }
-.led-unit.on.green i { background: var(--green); box-shadow: 0 0 12px #38e495, inset 0 0 3px #fff; }
-.toggle i { width: 18px; height: 29px; background: #252c29; border: 2px solid #bac0b4; border-radius: 2px; position: relative; box-shadow: 0 3px 3px #0018; }
-.toggle i:after { content: ""; position: absolute; left: 3px; top: 10px; width: 6px; height: 9px; background: #d3d1bc; border-radius: 1px; transition: .12s; }
-.toggle.on i:after { top: 2px; background: #f1ead2; }
-.push { min-width: 62px; }
-.push i { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #b3b7aa; background: #202624; box-shadow: 0 3px 5px #001; }
-.push:active i { background: #4e5651; transform: translateY(1px); }
+.board-shell .push:active, .compile-button:active, .control:active, .icon-button:active, .tree-file:active, .context-options button:active { transform: translateY(1px) scale(.98); box-shadow: var(--focus-ring); }
+.board-shell .led-unit, .board-shell .toggle, .board-shell .push, .board-shell .clock-chip, .board-shell .seven-display, .compile-button, .control, .icon-button, .tree-file, .context-options button { transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease; }
+.board-shell .led-unit i { width: 16px; height: 16px; border-radius: 50%; background: #342420; border: 1px solid #9c6f64; box-shadow: inset 0 0 4px #000; }
+.board-shell .led-unit.on.red i { background: var(--red); box-shadow: 0 0 12px #ff3a2f, inset 0 0 3px #fff; }
+.board-shell .led-unit.green i { background: #18372c; border-color: #598d78; }
+.board-shell .led-unit.on.green i { background: var(--green); box-shadow: 0 0 12px #38e495, inset 0 0 3px #fff; }
+.board-shell .toggle i { width: 18px; height: 29px; background: #252c29; border: 2px solid #bac0b4; border-radius: 2px; position: relative; box-shadow: 0 3px 3px #0018; }
+.board-shell .toggle i:after { content: ""; position: absolute; left: 3px; top: 10px; width: 6px; height: 9px; background: #d3d1bc; border-radius: 1px; transition: .12s; }
+.board-shell .toggle.on i:after { top: 2px; background: #f1ead2; }
+.board-shell .push { min-width: 62px; }
+.board-shell .push i { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #b3b7aa; background: #202624; box-shadow: 0 3px 5px #001; }
+.board-shell .push:active i { background: #4e5651; transform: translateY(1px); }
 
-.seven-display { width: 21px; height: 32px; min-width: 21px; min-height: 32px; position: relative; padding: 0; display: grid; place-items: center; cursor: default; font-size: 6px; overflow: hidden; }
-.seven-face { position: relative; width: 14px; height: 21px; }
+.board-shell .seven-display { width: 21px; height: 32px; min-width: 21px; min-height: 32px; position: relative; padding: 0; display: grid; place-items: center; cursor: default; font-size: 6px; overflow: hidden; }
+.board-shell .seven-face { position: relative; width: 14px; height: 21px; }
 .seg { position: absolute; background: #263039; border-radius: 2px; opacity: .75; }
-.seven-display.mapped .seg, .seven-display.partial .seg { background: #4b2a25; }
-.seven-display .seg.on { background: #ff6a55; box-shadow: 0 0 9px #ff6044; opacity: 1; }
-.seven-display .seg:hover { background: #39d0d8 !important; box-shadow: 0 0 13px #39d0d8 !important; opacity: 1 !important; cursor: default; }
-.simulation-running .seven-display.readonly-output .seg:hover { cursor: default; }
-.simulation-running .seven-display.readonly-output .seg:not(.on):hover { background: #263039 !important; box-shadow: none !important; opacity: .75 !important; }
-.simulation-running .seven-display.readonly-output .seg.on:hover { background: #ff6a55 !important; box-shadow: 0 0 9px #ff6044 !important; opacity: 1 !important; }
+.board-shell .seven-display.mapped .seg, .board-shell .seven-display.partial .seg { background: #4b2a25; }
+.board-shell .seven-display .seg.on { background: #ff6a55; box-shadow: 0 0 9px #ff6044; opacity: 1; }
+.board-shell .seven-display .seg:hover { background: #39d0d8 !important; box-shadow: 0 0 13px #39d0d8 !important; opacity: 1 !important; cursor: default; }
+.simulation-running .board-shell .seven-display.readonly-output .seg:hover { cursor: default; }
+.simulation-running .board-shell .seven-display.readonly-output .seg:not(.on):hover { background: #263039 !important; box-shadow: none !important; opacity: .75 !important; }
+.simulation-running .board-shell .seven-display.readonly-output .seg.on:hover { background: #ff6a55 !important; box-shadow: 0 0 9px #ff6044 !important; opacity: 1 !important; }
 .seg.a, .seg.d, .seg.g { width: 10px; height: 2px; left: 2px; }
 .seg.a { top: 0; }
 .seg.g { top: 9.5px; }
@@ -526,7 +529,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   .workspace { grid-template-columns: 42px var(--explorer-width) var(--explorer-handle-width) minmax(280px, var(--editor-width)) 5px minmax(460px, 1fr) 5px var(--inspector-width); }
   .board-canvas { gap: 9px; padding: 12px; }
   .board-grid { gap: 9px 12px; }
-  .led-unit, .toggle, .push { min-width: 34px; }
+  .board-shell .led-unit, .board-shell .toggle, .board-shell .push { min-width: 34px; }
 }
 
 @media (max-width: 800px) {
